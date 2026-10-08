@@ -1,9 +1,17 @@
 #!/bin/bash
 # Prova di base sull'emulatore: installa l'app, la avvia, fa gli screenshot e controlla che non vada in crash.
 mkdir -p ci-results
+exec > >(tee ci-results/emulator-test.log) 2>&1
 APK=app/build/outputs/apk/debug/app-debug.apk
 PKG=dev.pages.mywinecellar
 FAIL=0
+
+# Attende che il telefono virtuale riesca a risolvere l'indirizzo del database (fino a 90 secondi)
+for i in $(seq 1 30); do
+  if adb shell ping -c 1 -W 2 xqhoznbjyoityjtrolzb.supabase.co > /dev/null 2>&1; then echo "Rete dell'emulatore pronta (tentativo $i)"; break; fi
+  echo "Rete dell'emulatore non ancora pronta (tentativo $i)"; sleep 3
+done
+adb shell ping -c 1 -W 3 xqhoznbjyoityjtrolzb.supabase.co 2>&1 | head -3
 
 adb install -r "$APK" 2>&1 | tee ci-results/install.log
 adb logcat -c

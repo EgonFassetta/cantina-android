@@ -31,12 +31,20 @@ PY
   echo "## Ultime righe del log di compilazione"
   tail -40 "$OUT/build.log"
   echo
+  echo "## Rete del computer di GitHub verso il database"
+  cat "$OUT/rete-runner.txt" 2>/dev/null || echo "non verificata"
+  echo
   echo "## Prova sull'emulatore"
   if [ -f "$OUT/emulator-exit.txt" ]; then echo "esito: $(cat $OUT/emulator-exit.txt) (0 = ok)"; else echo "non eseguita o interrotta"; fi
+  if [ -f "$OUT/emulator-test.log" ]; then
+    echo
+    echo "### Passaggi della prova"
+    cat "$OUT/emulator-test.log" | head -80
+  fi
   if [ -f "$OUT/logcat.txt" ]; then
     echo
-    echo "### Errori nel registro dell'app"
-    grep -E "FATAL EXCEPTION|AndroidRuntime|dev.pages.mywinecellar" "$OUT/logcat.txt" | head -60
+    echo "### Errori gravi nel registro dell'app"
+    grep -E "FATAL EXCEPTION|E AndroidRuntime|E dev.pages|W System.err|UnknownHost|SocketTimeout" "$OUT/logcat.txt" | head -40
   fi
 } > "$OUT/summary.md" 2>&1
 

@@ -36,6 +36,10 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon --console=plain testDebugUnitTest assembleDebug 2>&1 | tee ci-results/build.log
 
+      - name: Verifica che il database sia raggiungibile dal computer di GitHub
+        run: |
+          curl -s -o /dev/null -w "database wines: HTTP %{http_code}\n" "https://xqhoznbjyoityjtrolzb.supabase.co/rest/v1/wines?select=id&limit=1" -H "apikey: sb_publishable_f_jswE7Sf0BU2hHKkQYuEg_ZT7e1rGh" | tee ci-results/rete-runner.txt
+
       - name: Abilita KVM (emulatore veloce)
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -52,6 +56,7 @@ jobs:
           target: google_apis
           profile: pixel_6
           disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 8.8.8.8,8.8.4.4
           script: bash ci/emulator-test.sh
 
       - name: Pubblica i risultati
