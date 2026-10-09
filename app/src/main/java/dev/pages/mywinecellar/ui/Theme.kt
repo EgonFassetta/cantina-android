@@ -10,6 +10,7 @@ val WineBright = Color(0xFF8E1F36)
 val Gold = Color(0xFFC9A65C)
 val Parchment = Color(0xFFF4EADA)
 val Cream = Color(0xFFFBF6EC)
+val GoldSoft = Color(0xFFEBD9AE)
 val Ink = Color(0xFF2B1D16)
 val InkSoft = Color(0xFF6B5A50)
 
@@ -28,6 +29,16 @@ fun CantinaTheme(content: @Composable () -> Unit) {
             surfaceVariant = Cream,
             onSurfaceVariant = InkSoft,
             outline = Gold,
+            primaryContainer = GoldSoft,
+            onPrimaryContainer = Ink,
+            secondaryContainer = GoldSoft,
+            onSecondaryContainer = Ink,
+            surfaceContainerLowest = Cream,
+            surfaceContainerLow = Cream,
+            surfaceContainer = Cream,
+            surfaceContainerHigh = Cream,
+            surfaceContainerHighest = Color(0xFFF1E6D2),
+            surfaceTint = Burgundy,
         ),
         content = content,
     )
