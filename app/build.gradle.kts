@@ -10,7 +10,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "dev.pages.mywinecellar"
+        applicationId = "mywine.cellar"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

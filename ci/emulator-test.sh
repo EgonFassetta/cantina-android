@@ -4,7 +4,7 @@
 mkdir -p ci-results
 exec > >(tee ci-results/emulator-test.log) 2>&1
 APK=app/build/outputs/apk/debug/app-debug.apk
-PKG=dev.pages.mywinecellar
+PKG=mywine.cellar
 CUR=ci-results/ui-current.xml
 FAIL=0
 
@@ -38,7 +38,7 @@ adb shell settings put global hide_error_dialogs 1 > /dev/null 2>&1
 
 adb install -r "$APK" 2>&1 | tee ci-results/install.log
 adb logcat -c
-adb shell am start -W -n $PKG/.MainActivity 2>&1 | tee ci-results/start.log
+adb shell am start -W -n $PKG/dev.pages.mywinecellar.MainActivity 2>&1 | tee ci-results/start.log
 
 echo "1) Attendo il catalogo (massimo 120 secondi)"
 if wait_for "Disponibile|Non disponibile" 120; then echo "OK: catalogo caricato"; else echo "ERRORE: il catalogo non si è caricato"; FAIL=1; fi
