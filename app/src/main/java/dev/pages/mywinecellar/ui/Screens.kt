@@ -20,8 +20,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,21 +40,31 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -55,13 +74,25 @@ import coil.compose.AsyncImage
 import dev.pages.mywinecellar.data.Wine
 import java.util.Locale
 
+private const val PRIVACY_URL = "https://mywinecellar.pages.dev/privacy.html"
+
+fun euro(v: Double): String = String.format(Locale.ITALY, "€ %.2f", v)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CantinaApp(vm: CatalogViewModel = viewModel()) {
+fun CantinaApp(vm: AppViewModel = viewModel()) {
     val state by vm.state.collectAsState()
-    var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
-    val selected = state.wines.firstOrNull { it.id == selectedId }
+    val snackbar = remember { SnackbarHostState() }
+    val uriHandler = LocalUriHandler.current
+    LaunchedEffect(Unit) { vm.messages.collect { snackbar.showSnackbar(it) } }
 
+    var tab by rememberSaveable { mutableIntStateOf(0) }
+    var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
+    var availabilityFor by remember { mutableStateOf<Wine?>(null) }
+    var showSendCart by remember { mutableStateOf(false) }
+    var showSupport by remember { mutableStateOf(false) }
+
+    val selected = state.wines.firstOrNull { it.id == selectedId }
     BackHandler(enabled = selected != null) { selectedId = null }
 
     Scaffold(
@@ -81,40 +112,190 @@ fun CantinaApp(vm: CatalogViewModel = viewModel()) {
                         }
                     }
                 },
+                actions = {
+                    if (selected != null) {
+                        val fav = selected.id in state.favorites
+                        IconButton(onClick = { vm.toggleFavorite(selected.id) }) {
+                            Icon(
+                                if (fav) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                contentDescription = if (fav) "Rimuovi dai preferiti" else "Aggiungi ai preferiti",
+                            )
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Burgundy,
                     titleContentColor = Parchment,
                     navigationIconContentColor = Parchment,
+                    actionIconContentColor = Parchment,
                 ),
             )
         },
-        containerColor = Parchment,
-    ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
-            when {
-                selected != null -> WineDetailScreen(selected)
-                state.loading -> LoadingView()
-                state.error != null -> ErrorView(state.error ?: "", onRetry = vm::load)
-                else -> CatalogScreen(
-                    state = state,
-                    onQuery = vm::setQuery,
-                    onOnlyAvailable = vm::setOnlyAvailable,
-                    onOpen = { selectedId = it.id },
+        bottomBar = {
+            NavigationBar(containerColor = Cream) {
+                val colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Parchment,
+                    selectedTextColor = Burgundy,
+                    indicatorColor = Burgundy,
+                    unselectedIconColor = InkSoft,
+                    unselectedTextColor = InkSoft,
+                )
+                NavigationBarItem(
+                    selected = tab == 0, colors = colors,
+                    onClick = { tab = 0; selectedId = null },
+                    icon = { Icon(Icons.Filled.Home, contentDescription = null) },
+                    label = { Text("Catalogo") },
+                )
+                NavigationBarItem(
+                    selected = tab == 1, colors = colors,
+                    onClick = { tab = 1; selectedId = null },
+                    icon = { Icon(Icons.Filled.Favorite, contentDescription = null) },
+                    label = { Text("Preferiti") },
+                )
+                NavigationBarItem(
+                    selected = tab == 2, colors = colors,
+                    onClick = { tab = 2; selectedId = null },
+                    icon = {
+                        BadgedBox(badge = { if (state.cartCount > 0) Badge { Text("${state.cartCount}") } }) {
+                            Icon(Icons.Filled.ShoppingCart, contentDescription = null)
+                        }
+                    },
+                    label = { Text("Carrello") },
+                )
+                NavigationBarItem(
+                    selected = tab == 3, colors = colors,
+                    onClick = { tab = 3; selectedId = null },
+                    icon = { Icon(Icons.Filled.AccountCircle, contentDescription = null) },
+                    label = { Text("Cantina") },
                 )
             }
+        },
+        snackbarHost = { SnackbarHost(snackbar) },
+        containerColor = Parchment,
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            state.email?.let { EmailBanner(it) }
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                when {
+                    selected != null -> WineDetailScreen(
+                        wine = selected,
+                        qtyInCart = state.cart[selected.id] ?: 0,
+                        canAdd = vm.canAdd(selected),
+                        onAdd = { vm.addToCart(selected) },
+                        onRequest = { availabilityFor = selected },
+                        onOpenSite = { url -> uriHandler.openUri(url) },
+                    )
+                    tab == 3 -> AccountScreen(
+                        state = state,
+                        onSave = vm::saveCellar,
+                        onLogin = vm::login,
+                        onLogout = vm::logoutDevice,
+                        onDelete = vm::deleteAccount,
+                        onSupport = { showSupport = true },
+                        onPrivacy = { uriHandler.openUri(PRIVACY_URL) },
+                    )
+                    state.loading -> LoadingView()
+                    state.error != null -> ErrorView(state.error ?: "", onRetry = vm::load)
+                    tab == 0 -> CatalogScreen(
+                        state = state,
+                        onQuery = vm::setQuery,
+                        onOnlyAvailable = vm::setOnlyAvailable,
+                        onOpen = { selectedId = it.id },
+                        onToggleFavorite = { vm.toggleFavorite(it.id) },
+                    )
+                    tab == 1 -> FavoritesScreen(
+                        state = state,
+                        onOpen = { selectedId = it.id },
+                        onToggleFavorite = { vm.toggleFavorite(it.id) },
+                    )
+                    else -> CartScreen(
+                        state = state,
+                        onChange = vm::changeQty,
+                        onOpen = { selectedId = it.id },
+                        onSend = { showSendCart = true },
+                    )
+                }
+            }
         }
+    }
+
+    // ---- finestre di dialogo
+    availabilityFor?.let { wine ->
+        RequestDialog(
+            mode = RequestMode.AVAILABILITY,
+            subtitle = wine.titolo,
+            defaultEmail = state.email.orEmpty(),
+            busy = state.busy,
+            onDismiss = { availabilityFor = null },
+            onSend = { email, phone, text ->
+                vm.sendAvailability(wine.id, email, phone, text) { ok -> if (ok) availabilityFor = null }
+            },
+        )
+    }
+    if (showSendCart) {
+        RequestDialog(
+            mode = RequestMode.CART,
+            subtitle = "${state.cartCount} bottiglie · totale stimato ${euro(state.cartTotal)}",
+            defaultEmail = state.email.orEmpty(),
+            busy = state.busy,
+            onDismiss = { showSendCart = false },
+            onSend = { email, phone, _ ->
+                vm.sendCart(email, phone) { ok -> if (ok) showSendCart = false }
+            },
+        )
+    }
+    if (showSupport) {
+        RequestDialog(
+            mode = RequestMode.SUPPORT,
+            subtitle = null,
+            defaultEmail = state.email.orEmpty(),
+            busy = state.busy,
+            onDismiss = { showSupport = false },
+            onSend = { email, phone, text ->
+                vm.sendSupport(email, phone, text) { ok -> if (ok) showSupport = false }
+            },
+        )
+    }
+    if (state.showGuestHint) {
+        AlertDialog(
+            onDismissRequest = vm::dismissGuestHint,
+            title = { Text("Stai usando l'app come ospite") },
+            text = {
+                Text(
+                    "Preferiti, carrello e bottiglie bevute restano solo su questo dispositivo e si perdono " +
+                        "se esci o cancelli i dati dell'app.\n\nPer memorizzarli e ritrovarli, entra con la tua email.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { vm.dismissGuestHint(); selectedId = null; tab = 3 }) {
+                    Text("Entra con la mia email")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = vm::dismissGuestHint) { Text("Continua come ospite") }
+            },
+        )
     }
 }
 
 @Composable
-private fun LoadingView() {
+private fun EmailBanner(email: String) {
+    Box(
+        Modifier.fillMaxWidth().background(Gold.copy(alpha = 0.25f)).padding(horizontal = 16.dp, vertical = 6.dp),
+    ) {
+        Text("Sei collegato come $email", fontSize = 13.sp, color = Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+fun LoadingView() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator(color = Burgundy)
     }
 }
 
 @Composable
-private fun ErrorView(message: String, onRetry: () -> Unit) {
+fun ErrorView(message: String, onRetry: () -> Unit) {
     Column(
         Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.Center,
@@ -130,10 +311,11 @@ private fun ErrorView(message: String, onRetry: () -> Unit) {
 
 @Composable
 private fun CatalogScreen(
-    state: CatalogState,
+    state: AppState,
     onQuery: (String) -> Unit,
     onOnlyAvailable: (Boolean) -> Unit,
     onOpen: (Wine) -> Unit,
+    onToggleFavorite: (Wine) -> Unit,
 ) {
     val visible = state.visible
     Column(Modifier.fillMaxSize()) {
@@ -150,60 +332,76 @@ private fun CatalogScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            FilterChip(
-                selected = !state.onlyAvailable,
-                onClick = { onOnlyAvailable(false) },
-                label = { Text("Tutti") },
-            )
-            FilterChip(
-                selected = state.onlyAvailable,
-                onClick = { onOnlyAvailable(true) },
-                label = { Text("Solo disponibili") },
-            )
+            FilterChip(selected = !state.onlyAvailable, onClick = { onOnlyAvailable(false) }, label = { Text("Tutti") })
+            FilterChip(selected = state.onlyAvailable, onClick = { onOnlyAvailable(true) }, label = { Text("Solo disponibili") })
         }
+        Text("${visible.size} vini", color = InkSoft, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 16.dp))
+        WineList(visible, state.favorites, onOpen, onToggleFavorite, emptyText = "Nessun vino trovato.")
+    }
+}
+
+@Composable
+private fun FavoritesScreen(
+    state: AppState,
+    onOpen: (Wine) -> Unit,
+    onToggleFavorite: (Wine) -> Unit,
+) {
+    val list = state.favoriteWines
+    Column(Modifier.fillMaxSize()) {
         Text(
-            text = "${visible.size} vini",
-            color = InkSoft,
-            fontSize = 13.sp,
-            modifier = Modifier.padding(horizontal = 16.dp),
+            "I tuoi preferiti",
+            fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Burgundy,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
         )
-        if (visible.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-                Text("Nessun vino trovato.", color = InkSoft)
-            }
-        } else {
-            LazyColumn(
-                contentPadding = PaddingValues(12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                items(visible, key = { it.id }) { wine ->
-                    WineCard(wine = wine, onClick = { onOpen(wine) })
-                }
+        WineList(
+            list, state.favorites, onOpen, onToggleFavorite,
+            emptyText = "Nessun preferito. Tocca il cuore su un vino per salvarlo qui.",
+        )
+    }
+}
+
+@Composable
+private fun WineList(
+    wines: List<Wine>,
+    favorites: Set<String>,
+    onOpen: (Wine) -> Unit,
+    onToggleFavorite: (Wine) -> Unit,
+    emptyText: String,
+) {
+    if (wines.isEmpty()) {
+        Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+            Text(emptyText, color = InkSoft)
+        }
+    } else {
+        LazyColumn(
+            contentPadding = PaddingValues(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            items(wines, key = { it.id }) { wine ->
+                WineCard(
+                    wine = wine,
+                    isFavorite = wine.id in favorites,
+                    onToggleFavorite = { onToggleFavorite(wine) },
+                    onClick = { onOpen(wine) },
+                )
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun WineCard(wine: Wine, onClick: () -> Unit) {
+private fun WineCard(wine: Wine, isFavorite: Boolean, onToggleFavorite: () -> Unit, onClick: () -> Unit) {
     Card(
         onClick = onClick,
         colors = CardDefaults.cardColors(containerColor = Cream),
         shape = RoundedCornerShape(6.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.padding(start = 10.dp, top = 10.dp, bottom = 10.dp, end = 2.dp), verticalAlignment = Alignment.CenterVertically) {
             WineThumb(wine, 76)
             Spacer(Modifier.size(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(
-                    wine.titolo,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 16.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Text(wine.titolo, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 val sub = listOf(wine.cantina, wine.annata).filter { it.isNotBlank() }.joinToString(" · ")
                 if (sub.isNotBlank()) Text(sub, color = InkSoft, fontSize = 14.sp)
                 val meta = listOf(wine.coloreVino, wine.caratteristica, wine.tipoVino, wine.regione)
@@ -212,8 +410,14 @@ private fun WineCard(wine: Wine, onClick: () -> Unit) {
                 Text(
                     if (wine.inVendita) "Disponibile" else "Non disponibile",
                     color = if (wine.inVendita) Burgundy else InkSoft,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium, fontSize = 13.sp,
+                )
+            }
+            IconButton(onClick = onToggleFavorite) {
+                Icon(
+                    if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                    contentDescription = if (isFavorite) "Rimuovi dai preferiti" else "Aggiungi ai preferiti",
+                    tint = if (isFavorite) WineBright else InkSoft,
                 )
             }
         }
@@ -221,7 +425,7 @@ private fun WineCard(wine: Wine, onClick: () -> Unit) {
 }
 
 @Composable
-private fun WineThumb(wine: Wine, sizeDp: Int) {
+fun WineThumb(wine: Wine, sizeDp: Int) {
     val shape = RoundedCornerShape(6.dp)
     if (wine.immagineUrl != null) {
         AsyncImage(
@@ -231,21 +435,23 @@ private fun WineThumb(wine: Wine, sizeDp: Int) {
             modifier = Modifier.size(sizeDp.dp).clip(shape),
         )
     } else {
-        Box(
-            Modifier.size(sizeDp.dp).clip(shape).background(Burgundy),
-            contentAlignment = Alignment.Center,
-        ) {
+        Box(Modifier.size(sizeDp.dp).clip(shape).background(Burgundy), contentAlignment = Alignment.Center) {
             Text("🍷", fontSize = (sizeDp / 2).sp)
         }
     }
 }
 
 @Composable
-private fun WineDetailScreen(wine: Wine) {
+private fun WineDetailScreen(
+    wine: Wine,
+    qtyInCart: Int,
+    canAdd: Boolean,
+    onAdd: () -> Unit,
+    onRequest: () -> Unit,
+    onOpenSite: (String) -> Unit,
+) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            WineThumb(wine, 220)
-        }
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { WineThumb(wine, 220) }
         Spacer(Modifier.height(16.dp))
         Text(wine.titolo, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Burgundy)
         val sub = listOf(wine.cantina, wine.annata).filter { it.isNotBlank() }.joinToString(" · ")
@@ -257,6 +463,17 @@ private fun WineDetailScreen(wine: Wine) {
             fontWeight = FontWeight.SemiBold,
         )
         Spacer(Modifier.height(12.dp))
+        if (wine.inVendita) {
+            if (canAdd) {
+                Button(onClick = onAdd, modifier = Modifier.fillMaxWidth()) { Text("Aggiungi al carrello") }
+            } else {
+                Text("Hai già aggiunto tutte le bottiglie disponibili.", color = InkSoft)
+            }
+            if (qtyInCart > 0) Text("Nel carrello: $qtyInCart", color = InkSoft, modifier = Modifier.padding(top = 6.dp))
+        } else {
+            Button(onClick = onRequest, modifier = Modifier.fillMaxWidth()) { Text("Richiedi disponibilità") }
+        }
+        Spacer(Modifier.height(12.dp))
         HorizontalDivider(color = Gold)
         DetailRow("Tipologia", wine.tipologia)
         DetailRow("Colore", wine.coloreVino)
@@ -266,7 +483,11 @@ private fun WineDetailScreen(wine: Wine) {
         DetailRow("Gradazione", wine.grado?.let { "$it% vol." } ?: "")
         DetailRow("Regione", wine.regione)
         DetailRow("Paese", wine.paese)
-        DetailRow("Prezzo", wine.prezzoMostrato?.let { String.format(Locale.ITALY, "€ %.2f", it) } ?: "")
+        DetailRow("Prezzo", wine.prezzoMostrato?.let { euro(it) } ?: "")
+        if (wine.sitoProduttore.isNotBlank()) {
+            val url = if (wine.sitoProduttore.startsWith("http")) wine.sitoProduttore else "https://${wine.sitoProduttore}"
+            TextButton(onClick = { onOpenSite(url) }) { Text("Sito del produttore", color = WineBright) }
+        }
     }
 }
 

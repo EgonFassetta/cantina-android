@@ -17,6 +17,10 @@ def load(path):
 
 
 def matches(node, wanted):
+    # "^testo" = il testo dell'elemento inizia con "testo"
+    if wanted.startswith("^"):
+        pre = wanted[1:]
+        return (node.get("text") or "").startswith(pre) or (node.get("content-desc") or "").startswith(pre)
     return node.get("text") == wanted or node.get("content-desc") == wanted
 
 
