@@ -235,7 +235,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
     if (showSendCart) {
         RequestDialog(
             mode = RequestMode.CART,
-            subtitle = "${state.cartCount} bottiglie · totale stimato ${euro(state.cartTotal)}",
+            subtitle = "${state.cartCount} bottiglie · ${state.cartTotalText.replaceFirstChar { it.lowercase() }}",
             defaultEmail = state.email.orEmpty(),
             busy = state.busy,
             onDismiss = { showSendCart = false },

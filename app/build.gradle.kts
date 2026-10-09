@@ -22,9 +22,23 @@ android {
         buildConfigField("String", "SUPABASE_KEY", "\"sb_publishable_f_jswE7Sf0BU2hHKkQYuEg_ZT7e1rGh\"")
     }
 
+    // La chiave di firma NON è nel codice: arriva dai segreti di GitHub (vedi .github/workflows/release.yml).
+    val keystorePath: String? = System.getenv("KEYSTORE_PATH")
+    signingConfigs {
+        if (keystorePath != null) {
+            create("release") {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            if (keystorePath != null) signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {

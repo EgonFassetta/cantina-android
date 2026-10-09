@@ -44,6 +44,13 @@ data class AppState(
         get() = cart.mapNotNull { (id, q) -> wines.firstOrNull { it.id == id }?.let { CartLine(it, q) } }
     val cartCount: Int get() = cartLines.sumOf { it.qty }
     val cartTotal: Double get() = cartLines.sumOf { (it.wine.prezzoMostrato ?: 0.0) * it.qty }
+
+    /** Il totale ha senso solo se almeno un vino del carrello ha un prezzo. */
+    val cartHasPrices: Boolean get() = cartLines.any { it.wine.prezzoMostrato != null }
+
+    val cartTotalText: String
+        get() = if (cartHasPrices) "Totale stimato: ${euro(cartTotal)}" else "Prezzo da concordare con il gestore"
+
 }
 
 /** Traduce gli errori tecnici in frasi comprensibili. */

@@ -59,6 +59,15 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 8.8.8.8,8.8.4.4
           script: bash ci/emulator-test.sh
 
+      - name: Pubblica l'APK di prova (da installare sul telefono)
+        if: steps.emulator.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk cantina-prova.apk
+          gh release view prova >/dev/null 2>&1 || gh release create prova --prerelease --title "Versione di prova" --notes "APK di prova, aggiornato a ogni modifica. Da installare sul telefono per provare l'app."
+          gh release upload prova cantina-prova.apk --clobber
+
       - name: Pubblica i risultati
         if: always()
         env:

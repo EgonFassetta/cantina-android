@@ -1,0 +1,59 @@
+name: Release (file per il Play Store)
+
+# Si avvia a mano da GitHub: Actions → "Release" → Run workflow.
+# Compila il file AAB firmato da caricare su Google Play e lo allega a una "Release" di GitHub.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Controlla che i segreti di firma ci siano
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "Mancano i segreti di firma (KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD)."
+            exit 1
+          fi
+
+      - name: Prepara la chiave di firma
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.keystore"
+          echo "KEYSTORE_PATH=$RUNNER_TEMP/upload.keystore" >> "$GITHUB_ENV"
+
+      - name: Compila AAB e APK firmati
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --console=plain testDebugUnitTest bundleRelease assembleRelease
+
+      - name: Pubblica la Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="play-store-${GITHUB_RUN_NUMBER}"
+          cp app/build/outputs/bundle/release/app-release.aab "mywine-cellar-${GITHUB_RUN_NUMBER}.aab"
+          cp app/build/outputs/apk/release/app-release.apk "mywine-cellar-${GITHUB_RUN_NUMBER}.apk"
+          gh release create "$TAG" --title "App per il Play Store (n. ${GITHUB_RUN_NUMBER})" \
+            --notes "File firmati. Il .aab si carica su Google Play Console; il .apk si può installare sul telefono per provare." \
+            "mywine-cellar-${GITHUB_RUN_NUMBER}.aab" "mywine-cellar-${GITHUB_RUN_NUMBER}.apk"

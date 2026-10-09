@@ -98,7 +98,7 @@ if python3 ci/ui.py has "$CUR" "Disponibile"; then
   expect "aggiunto al carrello" "^Nel carrello" 20
   tap "Indietro" 15
   tap "Carrello" 15
-  expect "carrello con totale" "^Totale stimato" 30
+  expect "carrello con totale o prezzo da concordare" "^Totale stimato|^Prezzo da concordare" 30
   shot 06-cart
   tap "Invia richiesta" 15
   expect "finestra della richiesta" "Invia la richiesta" 20

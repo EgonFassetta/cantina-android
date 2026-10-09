@@ -60,10 +60,7 @@ fun CartScreen(
                 }
             }
             Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                Text(
-                    "Totale stimato: ${euro(state.cartTotal)}",
-                    fontWeight = FontWeight.SemiBold, fontSize = 17.sp,
-                )
+                Text(state.cartTotalText, fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
                 Text(
                     "Nessun pagamento nell'app: invii una richiesta e ti ricontattiamo.",
                     color = InkSoft, fontSize = 13.sp, modifier = Modifier.padding(bottom = 10.dp),
@@ -90,7 +87,10 @@ private fun CartRow(line: CartLine, onChange: (Int) -> Unit, onOpen: () -> Unit)
                 Text(w.titolo, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 val sub = listOf(w.cantina, w.annata).filter { it.isNotBlank() }.joinToString(" · ")
                 if (sub.isNotBlank()) Text(sub, color = InkSoft, fontSize = 13.sp)
-                w.prezzoMostrato?.let { Text("${euro(it)} cad.", color = InkSoft, fontSize = 13.sp) }
+                Text(
+                    w.prezzoMostrato?.let { "${euro(it)} cad." } ?: "Prezzo su richiesta",
+                    color = InkSoft, fontSize = 13.sp,
+                )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedButton(onClick = { onChange(-1) }, contentPadding = PaddingValues(0.dp), modifier = Modifier.size(36.dp)) {
