@@ -85,6 +85,29 @@ shot 05-favorites-after-restart
 tap "Rimuovi dai preferiti" 15
 expect "preferito rimosso" "^Nessun preferito" 30
 
+echo "== 4a) Gruppi per cantina, ricerca e aggiornamento"
+tap "Catalogo" 15
+expect "elenco" "Solo disponibili" 30
+expect "intestazione della cantina" "Accordini Igino" 20
+dump; NA=$(python3 ci/ui.py count "$CUR" -)
+if xy=$(python3 ci/ui.py tap "$CUR" "Cerca cantina, vino, annata…"); then
+  adb shell input tap $xy; sleep 1
+  adb shell input text "Amarone"; sleep 2
+  adb shell input keyevent KEYCODE_ENTER; sleep 2
+  dump; NB=$(python3 ci/ui.py count "$CUR" -)
+  echo "vini: prima=$NA, cercando Amarone=$NB"
+  if [ -n "$NB" ] && [ "$NB" -gt 0 ] && [ "$NB" -lt "$NA" ]; then ok "la ricerca restringe l'elenco"; else bad "la ricerca non funziona (prima=$NA, dopo=$NB)"; fi
+  shot 04a-ricerca
+  tap "Cancella ricerca" 15
+  dump; NC=$(python3 ci/ui.py count "$CUR" -)
+  if [ "$NC" = "$NA" ]; then ok "cancellando la ricerca tornano tutti i vini"; else bad "dopo aver cancellato la ricerca: $NC invece di $NA"; fi
+else
+  echo "SALTATO: campo di ricerca non trovato nello schermo"
+fi
+adb shell input swipe 540 900 540 1700 400
+sleep 3
+expect "l'elenco è ancora lì dopo l'aggiornamento" "Disponibile|Non disponibile" 60
+
 echo "== 4b) Filtri"
 tap "Catalogo" 15
 expect "elenco" "Solo disponibili" 30

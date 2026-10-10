@@ -1,7 +1,9 @@
 package dev.pages.mywinecellar.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,14 +19,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
@@ -45,6 +51,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -64,6 +71,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import android.content.Intent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
@@ -85,6 +99,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
     val state by vm.state.collectAsState()
     val snackbar = remember { SnackbarHostState() }
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
     LaunchedEffect(Unit) { vm.messages.collect { snackbar.showSnackbar(it) } }
 
     var tab by rememberSaveable { mutableIntStateOf(0) }
@@ -116,6 +131,21 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                 },
                 actions = {
                     if (selected != null) {
+                        IconButton(onClick = {
+                            val send = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_SUBJECT, selected.titolo)
+                                putExtra(
+                                    Intent.EXTRA_TEXT,
+                                    listOf(selected.titolo, selected.cantina, selected.annata)
+                                        .filter { it.isNotBlank() }.joinToString(" · ") +
+                                        "\nLa Cantina di Egon: https://mywinecellar.pages.dev/",
+                                )
+                            }
+                            context.startActivity(Intent.createChooser(send, "Condividi il vino"))
+                        }) {
+                            Icon(Icons.Filled.Share, contentDescription = "Condividi")
+                        }
                         val fav = selected.id in state.favorites
                         IconButton(onClick = { vm.toggleFavorite(selected.id) }) {
                             Icon(
@@ -204,6 +234,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                         onQuery = vm::setQuery,
                         onOnlyAvailable = vm::setOnlyAvailable,
                         onOpenFilters = { showFilters = true },
+                        onRefresh = vm::refresh,
                         onOpen = { selectedId = it.id },
                         onToggleFavorite = { vm.toggleFavorite(it.id) },
                     )
@@ -338,10 +369,12 @@ private fun CatalogScreen(
     onQuery: (String) -> Unit,
     onOnlyAvailable: (Boolean) -> Unit,
     onOpenFilters: () -> Unit,
+    onRefresh: () -> Unit,
     onOpen: (Wine) -> Unit,
     onToggleFavorite: (Wine) -> Unit,
 ) {
     val visible = state.visible
+    val focus = LocalFocusManager.current
     Column(Modifier.fillMaxSize()) {
         OutlinedTextField(
             value = state.query,
@@ -349,6 +382,15 @@ private fun CatalogScreen(
             singleLine = true,
             placeholder = { Text("Cerca cantina, vino, annata…") },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+            trailingIcon = {
+                if (state.query.isNotEmpty()) {
+                    IconButton(onClick = { onQuery("") }) {
+                        Icon(Icons.Filled.Clear, contentDescription = "Cancella ricerca")
+                    }
+                }
+            },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { focus.moveFocus(FocusDirection.Exit) }),
             modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 12.dp),
         )
         Row(
@@ -372,7 +414,17 @@ private fun CatalogScreen(
                 )
             }
         }
-        WineList(visible, state.favorites, onOpen, onToggleFavorite, emptyText = "Nessun vino trovato.")
+        PullToRefreshBox(
+            isRefreshing = state.refreshing,
+            onRefresh = onRefresh,
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+        ) {
+            WineList(
+                visible, state.favorites, onOpen, onToggleFavorite,
+                emptyText = "Nessun vino trovato.",
+                grouped = state.sort == dev.pages.mywinecellar.data.SortMode.CANTINA,
+            )
+        }
     }
 }
 
@@ -396,6 +448,7 @@ private fun FavoritesScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun WineList(
     wines: List<Wine>,
@@ -403,6 +456,7 @@ private fun WineList(
     onOpen: (Wine) -> Unit,
     onToggleFavorite: (Wine) -> Unit,
     emptyText: String,
+    grouped: Boolean = false,
 ) {
     if (wines.isEmpty()) {
         Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
@@ -413,13 +467,32 @@ private fun WineList(
             contentPadding = PaddingValues(12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            items(wines, key = { it.id }) { wine ->
-                WineCard(
-                    wine = wine,
-                    isFavorite = wine.id in favorites,
-                    onToggleFavorite = { onToggleFavorite(wine) },
-                    onClick = { onOpen(wine) },
-                )
+            if (grouped) {
+                val groups = wines.groupBy { it.cantina.ifBlank { "Altre cantine" } }
+                groups.forEach { (cantina, list) ->
+                    stickyHeader(key = "cantina-$cantina") {
+                        Box(Modifier.fillMaxWidth().background(Parchment).padding(vertical = 6.dp, horizontal = 4.dp)) {
+                            Text(cantina, fontWeight = FontWeight.Bold, color = Burgundy, fontSize = 15.sp)
+                        }
+                    }
+                    items(list, key = { it.id }) { wine ->
+                        WineCard(
+                            wine = wine,
+                            isFavorite = wine.id in favorites,
+                            onToggleFavorite = { onToggleFavorite(wine) },
+                            onClick = { onOpen(wine) },
+                        )
+                    }
+                }
+            } else {
+                items(wines, key = { it.id }) { wine ->
+                    WineCard(
+                        wine = wine,
+                        isFavorite = wine.id in favorites,
+                        onToggleFavorite = { onToggleFavorite(wine) },
+                        onClick = { onOpen(wine) },
+                    )
+                }
             }
         }
     }
@@ -486,8 +559,27 @@ private fun WineDetailScreen(
     onRequest: () -> Unit,
     onOpenSite: (String) -> Unit,
 ) {
+    var zoom by remember { mutableStateOf(false) }
+    if (zoom && wine.immagineUrl != null) {
+        Dialog(onDismissRequest = { zoom = false }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+            Box(
+                Modifier.fillMaxSize().background(Ink.copy(alpha = 0.92f)).clickable { zoom = false },
+                contentAlignment = Alignment.Center,
+            ) {
+                AsyncImage(
+                    model = wine.immagineUrl,
+                    contentDescription = wine.titolo,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                )
+            }
+        }
+    }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { WineThumb(wine, 220) }
+        Box(
+            Modifier.fillMaxWidth().then(if (wine.immagineUrl != null) Modifier.clickable { zoom = true } else Modifier),
+            contentAlignment = Alignment.Center,
+        ) { WineThumb(wine, 220) }
         Spacer(Modifier.height(16.dp))
         Text(wine.titolo, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Burgundy)
         val sub = listOf(wine.cantina, wine.annata).filter { it.isNotBlank() }.joinToString(" · ")

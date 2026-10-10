@@ -49,6 +49,8 @@ data class AppState(
     val sort: SortMode = SortMode.CANTINA,
     /** True se il catalogo mostrato è l'ultimo salvato perché manca la connessione. */
     val offline: Boolean = false,
+    /** True mentre l'elenco si aggiorna (tirando giù la lista). */
+    val refreshing: Boolean = false,
 ) {
     val activeFilters: Int get() = listOf(colore, caratteristica, tipoVino, regione).count { it != null }
     val colori: List<String> get() = distinctValues(wines) { it.coloreVino }
@@ -122,6 +124,24 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
             refreshUserData()
+        }
+    }
+
+    /** Aggiorna il catalogo senza far sparire l'elenco già mostrato. */
+    fun refresh() {
+        viewModelScope.launch {
+            _state.update { it.copy(refreshing = true) }
+            try {
+                val json = api.fetchWinesJson()
+                val wines = parseWines(json)
+                cache.save(json)
+                _state.update { it.copy(wines = wines, offline = false) }
+                refreshUserData()
+            } catch (e: Exception) {
+                say(friendlyError(e))
+            } finally {
+                _state.update { it.copy(refreshing = false) }
+            }
         }
     }
 
