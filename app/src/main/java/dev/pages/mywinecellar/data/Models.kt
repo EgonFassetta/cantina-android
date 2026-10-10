@@ -53,6 +53,12 @@ data class WineDto(
     @Serializable(with = FlexString::class) val regione: String? = null,
     @SerialName("sito_produttore") @Serializable(with = FlexString::class) val sitoProduttore: String? = null,
     @SerialName("disponibile_vendita") @Serializable(with = FlexString::class) val disponibileVendita: String? = null,
+    @SerialName("giudizio_complessivo") @Serializable(with = FlexString::class) val giudizioComplessivo: String? = null,
+    @Serializable(with = FlexString::class) val morbidezza: String? = null,
+    @Serializable(with = FlexString::class) val struttura: String? = null,
+    @Serializable(with = FlexString::class) val tannicita: String? = null,
+    @Serializable(with = FlexString::class) val acidita: String? = null,
+    @Serializable(with = FlexString::class) val mineralita: String? = null,
 )
 
 /** Vino pronto per essere mostrato nell'app. */
@@ -75,7 +81,24 @@ data class Wine(
     val regione: String,
     val sitoProduttore: String,
     val disponibileVendita: Boolean,
+    /** Giudizio complessivo e profilo del vino, tutti su una scala da 0 a 100 (null = non indicato). */
+    val giudizio: Int? = null,
+    val morbidezza: Int? = null,
+    val struttura: Int? = null,
+    val tannicita: Int? = null,
+    val acidita: Int? = null,
+    val mineralita: Int? = null,
 ) {
+    /** Le caratteristiche indicate, nell'ordine in cui le mostra il sito. */
+    val profilo: List<Pair<String, Int>>
+        get() = listOfNotNull(
+            morbidezza?.let { "Morbidezza" to it },
+            struttura?.let { "Struttura" to it },
+            tannicita?.let { "Tannicità" to it },
+            acidita?.let { "Acidità" to it },
+            mineralita?.let { "Mineralità" to it },
+        )
+
     /** Titolo mostrato: il nome, oppure la tipologia se il nome manca. */
     val titolo: String get() = nome.ifBlank { tipologia }.ifBlank { "Vino senza nome" }
 
@@ -94,6 +117,9 @@ data class Wine(
 private fun String?.clean(): String = this?.trim().orEmpty()
 
 private fun String?.toDoubleLoose(): Double? = this?.trim()?.replace(',', '.')?.toDoubleOrNull()
+
+/** Valore da 0 a 100, oppure null se manca o non è un numero. */
+private fun String?.toScore(): Int? = toDoubleLoose()?.toInt()?.coerceIn(0, 100)
 
 private fun String?.toBoolLoose(): Boolean = when (this?.trim()?.lowercase(Locale.ROOT)) {
     "true", "t", "1", "si", "sì", "yes" -> true
@@ -129,6 +155,12 @@ fun WineDto.toWine(): Wine? {
         regione = regione.clean(),
         sitoProduttore = sitoProduttore.clean(),
         disponibileVendita = disponibileVendita.toBoolLoose(),
+        giudizio = giudizioComplessivo.toScore(),
+        morbidezza = morbidezza.toScore(),
+        struttura = struttura.toScore(),
+        tannicita = tannicita.toScore(),
+        acidita = acidita.toScore(),
+        mineralita = mineralita.toScore(),
     )
 }
 

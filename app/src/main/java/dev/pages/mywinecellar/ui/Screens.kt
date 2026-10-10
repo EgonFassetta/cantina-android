@@ -39,6 +39,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -91,6 +92,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
     var availabilityFor by remember { mutableStateOf<Wine?>(null) }
     var showSendCart by remember { mutableStateOf(false) }
     var showSupport by remember { mutableStateOf(false) }
+    var showFilters by remember { mutableStateOf(false) }
 
     val selected = state.wines.firstOrNull { it.id == selectedId }
     BackHandler(enabled = selected != null) { selectedId = null }
@@ -200,6 +202,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                         state = state,
                         onQuery = vm::setQuery,
                         onOnlyAvailable = vm::setOnlyAvailable,
+                        onOpenFilters = { showFilters = true },
                         onOpen = { selectedId = it.id },
                         onToggleFavorite = { vm.toggleFavorite(it.id) },
                     )
@@ -220,6 +223,13 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
     }
 
     // ---- finestre di dialogo
+    if (showFilters) {
+        FiltersDialog(
+            state = state,
+            onApply = vm::applyFilters,
+            onDismiss = { showFilters = false },
+        )
+    }
     availabilityFor?.let { wine ->
         RequestDialog(
             mode = RequestMode.AVAILABILITY,
@@ -314,6 +324,7 @@ private fun CatalogScreen(
     state: AppState,
     onQuery: (String) -> Unit,
     onOnlyAvailable: (Boolean) -> Unit,
+    onOpenFilters: () -> Unit,
     onOpen: (Wine) -> Unit,
     onToggleFavorite: (Wine) -> Unit,
 ) {
@@ -335,7 +346,19 @@ private fun CatalogScreen(
             FilterChip(selected = !state.onlyAvailable, onClick = { onOnlyAvailable(false) }, label = { Text("Tutti") })
             FilterChip(selected = state.onlyAvailable, onClick = { onOnlyAvailable(true) }, label = { Text("Solo disponibili") })
         }
-        Text("${visible.size} vini", color = InkSoft, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 16.dp))
+        Row(
+            Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("${visible.size} vini", color = InkSoft, fontSize = 13.sp)
+            TextButton(onClick = onOpenFilters) {
+                Text(
+                    if (state.activeFilters > 0) "Filtri (${state.activeFilters})" else "Filtri",
+                    color = WineBright, fontWeight = FontWeight.SemiBold,
+                )
+            }
+        }
         WineList(visible, state.favorites, onOpen, onToggleFavorite, emptyText = "Nessun vino trovato.")
     }
 }
@@ -484,10 +507,32 @@ private fun WineDetailScreen(
         DetailRow("Regione", wine.regione)
         DetailRow("Paese", wine.paese)
         DetailRow("Prezzo", wine.prezzoMostrato?.let { euro(it) } ?: "")
+        if (wine.giudizio != null || wine.profilo.isNotEmpty()) {
+            Spacer(Modifier.height(14.dp))
+            Text("Profilo del vino", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Burgundy)
+            wine.giudizio?.let { ProfileBar("Giudizio complessivo", it) }
+            wine.profilo.forEach { (label, value) -> ProfileBar(label, value) }
+        }
         if (wine.sitoProduttore.isNotBlank()) {
             val url = if (wine.sitoProduttore.startsWith("http")) wine.sitoProduttore else "https://${wine.sitoProduttore}"
             TextButton(onClick = { onOpenSite(url) }) { Text("Sito del produttore", color = WineBright) }
         }
+    }
+}
+
+@Composable
+private fun ProfileBar(label: String, value: Int) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(label, color = InkSoft, fontSize = 13.sp)
+            Text("$value / 100", fontSize = 13.sp)
+        }
+        LinearProgressIndicator(
+            progress = { value.coerceIn(0, 100) / 100f },
+            modifier = Modifier.fillMaxWidth().height(6.dp),
+            color = Burgundy,
+            trackColor = GoldSoft,
+        )
     }
 }
 

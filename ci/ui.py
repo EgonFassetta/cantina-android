@@ -38,6 +38,13 @@ def main():
     if cmd == "has":
         wanted = arg.split("|")
         sys.exit(0 if any(matches(n, w) for n in nodes for w in wanted) else 1)
+    if cmd == "count":
+        for n in nodes:
+            m = re.match(r"^(\d+) vini$", n.get("text") or "")
+            if m:
+                print(m.group(1))
+                sys.exit(0)
+        sys.exit(1)
     if cmd == "tap":
         for n in nodes:
             if matches(n, arg):

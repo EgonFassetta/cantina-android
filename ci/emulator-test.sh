@@ -85,6 +85,26 @@ shot 05-favorites-after-restart
 tap "Rimuovi dai preferiti" 15
 expect "preferito rimosso" "^Nessun preferito" 30
 
+echo "== 4b) Filtri"
+tap "Catalogo" 15
+expect "elenco" "Solo disponibili" 30
+dump; N0=$(python3 ci/ui.py count "$CUR" -)
+tap "Filtri" 15
+expect "finestra dei filtri" "Applica" 20
+tap "Rosso" 15
+tap "Applica" 15
+expect "filtro attivo" "^Filtri (1)" 20
+dump; N1=$(python3 ci/ui.py count "$CUR" -)
+echo "vini: prima=$N0, con filtro Rosso=$N1"
+if [ -n "$N0" ] && [ -n "$N1" ] && [ "$N1" -gt 0 ] && [ "$N1" -le "$N0" ]; then ok "il filtro per colore restringe l'elenco"; else bad "il filtro per colore non funziona (prima=$N0, dopo=$N1)"; fi
+shot 04b-filtri
+tap "Filtri (1)" 15
+tap "Azzera tutto" 15
+tap "Applica" 15
+expect "filtri azzerati" "Filtri" 20
+dump; N2=$(python3 ci/ui.py count "$CUR" -)
+if [ "$N2" = "$N0" ]; then ok "azzerando i filtri tornano tutti i vini ($N2)"; else bad "dopo l'azzeramento: $N2 invece di $N0"; fi
+
 echo "== 5) Carrello"
 tap "Catalogo" 15
 expect "elenco" "Solo disponibili" 30

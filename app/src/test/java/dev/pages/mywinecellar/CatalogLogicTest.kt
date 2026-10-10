@@ -1,6 +1,9 @@
 package dev.pages.mywinecellar
 
+import dev.pages.mywinecellar.data.SortMode
+import dev.pages.mywinecellar.data.distinctValues
 import dev.pages.mywinecellar.data.filterWines
+import dev.pages.mywinecellar.data.sortWines
 import dev.pages.mywinecellar.data.parseWines
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -59,5 +62,45 @@ class CatalogLogicTest {
         assertEquals(1, filterWines(wines, "VENETO", false).size)
         assertEquals(1, filterWines(wines, "2020", false).size)
         assertEquals(0, filterWines(wines, "xyz", false).size)
+    }
+
+    private val rich = """
+        [
+          {"id":"a","cantina":"Zeta","nome":"Uno","annata":"2010","colore_vino":"Rosso","effervescenza":"Fermo","dolcezza":"Secco","regione":"Veneto","giudizio_complessivo":88,"morbidezza":"70","struttura":55.6},
+          {"id":"b","cantina":"alfa","nome":"Due","annata":"2020","colore_vino":"Bianco","effervescenza":"Bollicine","dolcezza":"Brut","regione":"Friuli-Venezia Giulia","giudizio_complessivo":null},
+          {"id":"c","cantina":"Beta","nome":"Tre","annata":"2015","colore_vino":"rosso","effervescenza":"Fermo","dolcezza":"Dolce","regione":"Veneto"}
+        ]
+    """.trimIndent()
+
+    @Test
+    fun filtriAvanzatiSiCombinano() {
+        val w = parseWines(rich)
+        assertEquals(listOf("a", "c"), filterWines(w, "", false, colore = "Rosso").map { it.id })
+        assertEquals(listOf("b"), filterWines(w, "", false, caratteristica = "Bollicine").map { it.id })
+        assertEquals(listOf("c"), filterWines(w, "", false, colore = "Rosso", tipoVino = "Dolce").map { it.id })
+        assertEquals(listOf("a", "c"), filterWines(w, "", false, regione = "veneto").map { it.id })
+        assertEquals(0, filterWines(w, "", false, colore = "Bianco", regione = "Veneto").size)
+    }
+
+    @Test
+    fun ordinamenti() {
+        val w = parseWines(rich)
+        assertEquals(listOf("b", "c", "a"), sortWines(w, SortMode.CANTINA).map { it.id })   // alfa, Beta, Zeta
+        assertEquals(listOf("b", "c", "a"), sortWines(w, SortMode.ANNATA).map { it.id })    // 2020, 2015, 2010
+        assertEquals("a", sortWines(w, SortMode.GIUDIZIO).first().id)
+    }
+
+    @Test
+    fun profiloELaScalaDa0A100() {
+        val a = parseWines(rich).first { it.id == "a" }
+        assertEquals(88, a.giudizio)
+        assertEquals(listOf("Morbidezza" to 70, "Struttura" to 55), a.profilo)
+        assertNull(parseWines(rich).first { it.id == "b" }.giudizio)
+    }
+
+    @Test
+    fun vociDeiFiltriSenzaDoppioni() {
+        val w = parseWines(rich)
+        assertEquals(listOf("Bianco", "Rosso"), distinctValues(w) { it.coloreVino })   // "rosso" e "Rosso" sono la stessa voce
     }
 }

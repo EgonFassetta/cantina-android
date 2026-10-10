@@ -6,9 +6,12 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.pages.mywinecellar.data.ApiException
 import dev.pages.mywinecellar.data.SharedPrefsSessionStore
+import dev.pages.mywinecellar.data.SortMode
 import dev.pages.mywinecellar.data.SupabaseApi
 import dev.pages.mywinecellar.data.Wine
+import dev.pages.mywinecellar.data.distinctValues
 import dev.pages.mywinecellar.data.filterWines
+import dev.pages.mywinecellar.data.sortWines
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -36,9 +39,24 @@ data class AppState(
     val cart: Map<String, Int> = emptyMap(),
     val busy: Boolean = false,
     val showGuestHint: Boolean = false,
+    val colore: String? = null,
+    val caratteristica: String? = null,
+    val tipoVino: String? = null,
+    val regione: String? = null,
+    val sort: SortMode = SortMode.CANTINA,
 ) {
+    val activeFilters: Int get() = listOf(colore, caratteristica, tipoVino, regione).count { it != null }
+    val colori: List<String> get() = distinctValues(wines) { it.coloreVino }
+    val caratteristiche: List<String> get() = distinctValues(wines) { it.caratteristica }
+    val tipiVino: List<String> get() = distinctValues(wines) { it.tipoVino }
+    val regioni: List<String> get() = distinctValues(wines) { it.regione }
+
     val isGuest: Boolean get() = email == null
-    val visible: List<Wine> get() = filterWines(wines, query, onlyAvailable)
+    val visible: List<Wine>
+        get() = sortWines(
+            filterWines(wines, query, onlyAvailable, colore, caratteristica, tipoVino, regione),
+            sort,
+        )
     val favoriteWines: List<Wine> get() = wines.filter { it.id in favorites }
     val cartLines: List<CartLine>
         get() = cart.mapNotNull { (id, q) -> wines.firstOrNull { it.id == id }?.let { CartLine(it, q) } }
@@ -109,6 +127,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setQuery(q: String) = _state.update { it.copy(query = q) }
 
     fun setOnlyAvailable(v: Boolean) = _state.update { it.copy(onlyAvailable = v) }
+
+    fun applyFilters(colore: String?, caratteristica: String?, tipoVino: String?, regione: String?, sort: SortMode) =
+        _state.update {
+            it.copy(colore = colore, caratteristica = caratteristica, tipoVino = tipoVino, regione = regione, sort = sort)
+        }
 
     // ------------------------------------------------------------ avviso agli ospiti
 
