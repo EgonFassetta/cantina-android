@@ -47,8 +47,11 @@ class SupabaseApi(
     // ---------------------------------------------------------------- catalogo (pubblico)
 
     /** Scarica tutto il catalogo (a pagine da 1000, come previsto dal database). */
-    suspend fun fetchWines(): List<Wine> = withContext(Dispatchers.IO) {
-        val result = mutableListOf<Wine>()
+    suspend fun fetchWines(): List<Wine> = parseWines(fetchWinesJson())
+
+    /** Il catalogo in formato JSON grezzo (serve anche per salvarlo nella cache). */
+    suspend fun fetchWinesJson(): String = withContext(Dispatchers.IO) {
+        val result = mutableListOf<kotlinx.serialization.json.JsonElement>()
         var offset = 0
         val pageSize = 1000
         var done = false
@@ -64,12 +67,12 @@ class SupabaseApi(
                 if (!response.isSuccessful) {
                     throw ApiException("Il server ha risposto con errore ${response.code}", response.code)
                 }
-                val rows = (json.parseToJsonElement(body) as? JsonArray)?.size ?: 0
-                result += parseWines(body)
-                if (rows < pageSize) done = true else offset += pageSize
+                val rows = (json.parseToJsonElement(body) as? JsonArray) ?: JsonArray(emptyList())
+                result += rows
+                if (rows.size < pageSize) done = true else offset += pageSize
             }
         }
-        result
+        JsonArray(result).toString()
     }
 
     // ---------------------------------------------------------------- sessione

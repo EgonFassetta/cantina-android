@@ -176,6 +176,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
         containerColor = Parchment,
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
+            if (state.offline) OfflineBanner(onRetry = vm::load)
             state.email?.let { EmailBanner(it) }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when {
@@ -285,6 +286,18 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                 TextButton(onClick = vm::dismissGuestHint) { Text("Continua come ospite") }
             },
         )
+    }
+}
+
+@Composable
+private fun OfflineBanner(onRetry: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().background(WineBright.copy(alpha = 0.15f)).padding(start = 16.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text("Catalogo non aggiornato: sei offline.", fontSize = 13.sp, color = Ink, modifier = Modifier.weight(1f))
+        TextButton(onClick = onRetry) { Text("Aggiorna", color = WineBright, fontSize = 13.sp) }
     }
 }
 

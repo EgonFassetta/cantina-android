@@ -147,6 +147,18 @@ expect "controllo messaggio" "Scrivi un messaggio prima di inviare." 20
 shot 09-support-validation
 tap "Annulla" 15
 
+echo "== 7) Apertura senza connessione (mostra l'ultimo catalogo salvato)"
+adb shell svc wifi disable > /dev/null 2>&1
+adb shell svc data disable > /dev/null 2>&1
+sleep 3
+adb shell am force-stop $PKG
+adb shell am start -W -n $PKG/$ACT > /dev/null 2>&1
+expect "avviso di catalogo non aggiornato" "^Catalogo non aggiornato" 90
+expect "i vini si vedono anche offline" "Disponibile|Non disponibile" 30
+shot 10-offline
+adb shell svc wifi enable > /dev/null 2>&1
+adb shell svc data enable > /dev/null 2>&1
+
 adb logcat -d > ci-results/logcat.txt
 if grep -q "FATAL EXCEPTION" ci-results/logcat.txt; then bad "crash dell'app"; else ok "nessun crash"; fi
 

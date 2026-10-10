@@ -8,6 +8,9 @@ import dev.pages.mywinecellar.data.ApiException
 import dev.pages.mywinecellar.data.SharedPrefsSessionStore
 import dev.pages.mywinecellar.data.SortMode
 import dev.pages.mywinecellar.data.SupabaseApi
+import dev.pages.mywinecellar.data.WineCache
+import dev.pages.mywinecellar.data.parseWines
+import java.io.File
 import dev.pages.mywinecellar.data.Wine
 import dev.pages.mywinecellar.data.distinctValues
 import dev.pages.mywinecellar.data.filterWines
@@ -44,6 +47,8 @@ data class AppState(
     val tipoVino: String? = null,
     val regione: String? = null,
     val sort: SortMode = SortMode.CANTINA,
+    /** True se il catalogo mostrato è l'ultimo salvato perché manca la connessione. */
+    val offline: Boolean = false,
 ) {
     val activeFilters: Int get() = listOf(colore, caratteristica, tipoVino, regione).count { it != null }
     val colori: List<String> get() = distinctValues(wines) { it.coloreVino }
@@ -83,6 +88,7 @@ fun friendlyError(e: Throwable): String = when (e) {
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val prefs = app.getSharedPreferences("app", Context.MODE_PRIVATE)
     private val api = SupabaseApi(SharedPrefsSessionStore(app))
+    private val cache = WineCache(File(app.cacheDir, "wines.json"))
 
     private val _state = MutableStateFlow(AppState())
     val state: StateFlow<AppState> = _state.asStateFlow()
@@ -102,11 +108,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _state.update { it.copy(loading = true, error = null) }
             try {
-                val wines = api.fetchWines()
-                _state.update { it.copy(loading = false, wines = wines) }
+                val json = api.fetchWinesJson()
+                val wines = parseWines(json)
+                cache.save(json)
+                _state.update { it.copy(loading = false, wines = wines, offline = false) }
             } catch (e: Exception) {
-                _state.update { it.copy(loading = false, error = friendlyError(e)) }
-                return@launch
+                val saved = cache.load()
+                if (saved != null) {
+                    _state.update { it.copy(loading = false, wines = saved, offline = true) }
+                } else {
+                    _state.update { it.copy(loading = false, error = friendlyError(e)) }
+                    return@launch
+                }
             }
             refreshUserData()
         }
