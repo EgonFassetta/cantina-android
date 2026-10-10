@@ -44,6 +44,21 @@ jobs:
           ./gradlew --no-daemon --console=plain bundleRelease assembleRelease 2>&1 | tee ci-results/release-build.log
           ls -la app/build/outputs/bundle/release/ app/build/outputs/apk/release/ 2>&1 | tee -a ci-results/release-build.log
 
+      - name: Controlli sul pacchetto per il Play Store (versione Android, permessi, librerie)
+        continue-on-error: true
+        run: |
+          AAPT2=$(ls -d "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
+          AAB=$(ls app/build/outputs/bundle/release/*.aab | head -1)
+          {
+            echo "File: $APK"
+            "$AAPT2" dump badging "$APK" | grep -E "^package:|^sdkVersion|^targetSdkVersion|^uses-permission|^application-label:|^application-debuggable|^native-code" 
+            echo "--- librerie native nel pacchetto:"
+            unzip -l "$APK" | grep -E "lib/" | awk '{print $4}' | sed 's#/[^/]*$##' | sort | uniq -c
+            echo "--- dimensioni:"
+            ls -l "$APK" "$AAB" | awk '{print $5, $9}'
+          } 2>&1 | tee ci-results/package-info.txt
+
       - name: Verifica che il database sia raggiungibile dal computer di GitHub
         run: |
           curl -s -o /dev/null -w "database wines: HTTP %{http_code}\n" "https://xqhoznbjyoityjtrolzb.supabase.co/rest/v1/wines?select=id&limit=1" -H "apikey: sb_publishable_f_jswE7Sf0BU2hHKkQYuEg_ZT7e1rGh" | tee ci-results/rete-runner.txt

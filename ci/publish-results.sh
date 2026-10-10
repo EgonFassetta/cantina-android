@@ -40,6 +40,9 @@ PY
     echo "non eseguita"
   fi
   echo
+  echo "## Controlli sul pacchetto"
+  cat "$OUT/package-info.txt" 2>/dev/null || echo "non eseguiti"
+  echo
   echo "## Rete del computer di GitHub verso il database"
   cat "$OUT/rete-runner.txt" 2>/dev/null || echo "non verificata"
   echo
