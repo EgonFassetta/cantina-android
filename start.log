@@ -1,0 +1,7 @@
+Starting: Intent { cmp=mywine.cellar/dev.pages.mywinecellar.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: mywine.cellar/dev.pages.mywinecellar.MainActivity
+TotalTime: 4771
+WaitTime: 4851
+Complete

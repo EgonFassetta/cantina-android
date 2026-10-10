@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.pages.mywinecellar.WineCacheTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-10T17:01:23.563Z" hostname="runnervmmprz5" time="0.005">
+  <properties/>
+  <testcase name="fileRottoNonFaCrollare" classname="dev.pages.mywinecellar.WineCacheTest" time="0.003"/>
+  <testcase name="senzaFileNonCiSonoVini" classname="dev.pages.mywinecellar.WineCacheTest" time="0.001"/>
+  <testcase name="salvaERilegge" classname="dev.pages.mywinecellar.WineCacheTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

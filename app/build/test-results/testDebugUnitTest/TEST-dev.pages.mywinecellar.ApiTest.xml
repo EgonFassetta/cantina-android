@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.pages.mywinecellar.ApiTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-10T17:01:22.971Z" hostname="runnervmmprz5" time="0.534">
+  <properties/>
+  <testcase name="erroreDelLimiteRichiesteArrivaComeMessaggio" classname="dev.pages.mywinecellar.ApiTest" time="0.374"/>
+  <testcase name="accessoConEmailSalvaLaNuovaSessione" classname="dev.pages.mywinecellar.ApiTest" time="0.015"/>
+  <testcase name="preferitoNuovoFaPatchPoiInserisce" classname="dev.pages.mywinecellar.ApiTest" time="0.014"/>
+  <testcase name="richiestaCarrelloInviaSoloViniEQuantita" classname="dev.pages.mywinecellar.ApiTest" time="0.006"/>
+  <testcase name="leggeIPreferiti" classname="dev.pages.mywinecellar.ApiTest" time="0.007"/>
+  <testcase name="tokenScadutoVieneRinnovatoELaRichiestaRipetuta" classname="dev.pages.mywinecellar.ApiTest" time="0.092"/>
+  <testcase name="preferitoEsistenteBastaIlPatch" classname="dev.pages.mywinecellar.ApiTest" time="0.006"/>
+  <testcase name="creaSessioneAnonimaELaSalva" classname="dev.pages.mywinecellar.ApiTest" time="0.004"/>
+  <testcase name="emailGiaRegistrataDaUnMessaggioChiaro" classname="dev.pages.mywinecellar.ApiTest" time="0.005"/>
+  <testcase name="leggeIlCarrello" classname="dev.pages.mywinecellar.ApiTest" time="0.004"/>
+  <testcase name="carrelloAggiungeERimuove" classname="dev.pages.mywinecellar.ApiTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

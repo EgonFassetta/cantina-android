@@ -1,0 +1,47 @@
+Performing Streamed Install
+Success
+Starting: Intent { cmp=mywine.cellar/dev.pages.mywinecellar.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: mywine.cellar/dev.pages.mywinecellar.MainActivity
+TotalTime: 4771
+WaitTime: 4851
+Complete
+== 1) Catalogo
+OK: catalogo caricato dal database
+== 2) Scheda del vino e preferito (come ospite)
+OK: scheda del vino aperta
+OK: avviso per gli ospiti
+OK: cuore attivo (preferito salvato)
+== 3) Elenco preferiti
+OK: il vino è tra i preferiti
+== 4) Chiudo e riapro l'app: il preferito deve restare
+OK: catalogo ricaricato
+OK: il preferito è ancora lì dopo la riapertura
+OK: preferito rimosso
+== 4b) Filtri
+OK: elenco
+OK: finestra dei filtri
+OK: filtro attivo
+vini: prima=190, con filtro Rosso=187
+OK: il filtro per colore restringe l'elenco
+OK: filtri azzerati
+OK: azzerando i filtri tornano tutti i vini (190)
+== 5) Carrello
+OK: elenco
+OK: scheda con pulsante carrello
+OK: aggiunto al carrello
+OK: carrello con totale o prezzo da concordare
+OK: finestra della richiesta
+OK: controllo dei dati obbligatori
+OK: carrello svuotato
+== 6) Account e assistenza
+OK: schermata account da ospite
+OK: controllo email
+OK: modulo di accesso
+OK: finestra assistenza
+OK: controllo messaggio
+== 7) Apertura senza connessione (mostra l'ultimo catalogo salvato)
+OK: avviso di catalogo non aggiornato
+OK: i vini si vedono anche offline
+OK: nessun crash
