@@ -10,6 +10,7 @@ mkdir -p "$OUT"
   echo "- Commit: $GITHUB_SHA"
   echo "- Compilazione e test automatici: **$BUILD_OUTCOME**"
   echo "- Prova sull'emulatore: **$EMU_OUTCOME**"
+  echo "- File per il Play Store (compilazione senza firma): **$RELEASE_OUTCOME**"
   echo "- Data: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo
   echo "## Test automatici (logica)"
@@ -30,6 +31,14 @@ PY
   echo
   echo "## Ultime righe del log di compilazione"
   tail -40 "$OUT/build.log"
+  echo
+  echo "## File per il Play Store"
+  if [ -f "$OUT/release-build.log" ]; then
+    grep -E "^e: |error:|FAILURE:|What went wrong|Execution failed|Could not |Lint found" -A4 "$OUT/release-build.log" | head -60
+    tail -12 "$OUT/release-build.log"
+  else
+    echo "non eseguita"
+  fi
   echo
   echo "## Rete del computer di GitHub verso il database"
   cat "$OUT/rete-runner.txt" 2>/dev/null || echo "non verificata"

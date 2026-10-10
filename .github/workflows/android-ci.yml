@@ -36,6 +36,14 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon --console=plain testDebugUnitTest assembleDebug 2>&1 | tee ci-results/build.log
 
+      - name: Verifica la compilazione del file per il Play Store (senza firma)
+        id: release_check
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon --console=plain bundleRelease assembleRelease 2>&1 | tee ci-results/release-build.log
+          ls -la app/build/outputs/bundle/release/ app/build/outputs/apk/release/ 2>&1 | tee -a ci-results/release-build.log
+
       - name: Verifica che il database sia raggiungibile dal computer di GitHub
         run: |
           curl -s -o /dev/null -w "database wines: HTTP %{http_code}\n" "https://xqhoznbjyoityjtrolzb.supabase.co/rest/v1/wines?select=id&limit=1" -H "apikey: sb_publishable_f_jswE7Sf0BU2hHKkQYuEg_ZT7e1rGh" | tee ci-results/rete-runner.txt
@@ -73,4 +81,5 @@ jobs:
         env:
           BUILD_OUTCOME: ${{ steps.build.outcome }}
           EMU_OUTCOME: ${{ steps.emulator.outcome }}
+          RELEASE_OUTCOME: ${{ steps.release_check.outcome }}
         run: bash ci/publish-results.sh
