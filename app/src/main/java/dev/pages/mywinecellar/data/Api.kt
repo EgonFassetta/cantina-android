@@ -68,7 +68,7 @@ class SupabaseApi(
                     throw ApiException("Il server ha risposto con errore ${response.code}", response.code)
                 }
                 val rows = (json.parseToJsonElement(body) as? JsonArray) ?: JsonArray(emptyList())
-                result += rows
+                result.addAll(rows)
                 if (rows.size < pageSize) done = true else offset += pageSize
             }
         }
