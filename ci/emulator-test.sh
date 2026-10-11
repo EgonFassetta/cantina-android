@@ -62,10 +62,17 @@ shot 01-home
 echo "== 2) Scheda del vino e preferito (come ospite)"
 tap "Non disponibile" 20 || tap "Disponibile" 20
 expect "scheda del vino aperta" "Indietro" 30
-adb shell input swipe 540 1700 540 700 300
+# La scheda è lunga: scorro verso il basso finché compare "Altri vini di ..." (massimo 5 volte), poi torno in cima.
+FOUND=0
+for k in 1 2 3 4 5; do
+  dump
+  if python3 ci/ui.py has "$CUR" "^Altri vini di"; then FOUND=1; break; fi
+  adb shell input swipe 540 1800 540 500 300
+  sleep 1
+done
+if [ $FOUND = 1 ]; then ok "altri vini della stessa cantina"; shot 02b-altri-vini; else bad "altri vini della stessa cantina (non compare: ^Altri vini di)"; fi
+for k in 1 2 3 4 5 6; do adb shell input swipe 540 500 540 1800 200; done
 sleep 1
-expect "altri vini della stessa cantina" "^Altri vini di" 20
-adb shell input swipe 540 700 540 1700 300
 tap "Aggiungi ai preferiti" 20
 expect "avviso per gli ospiti" "Stai usando l'app come ospite" 20
 shot 02-guest-hint
