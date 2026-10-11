@@ -62,6 +62,10 @@ shot 01-home
 echo "== 2) Scheda del vino e preferito (come ospite)"
 tap "Non disponibile" 20 || tap "Disponibile" 20
 expect "scheda del vino aperta" "Indietro" 30
+adb shell input swipe 540 1700 540 700 300
+sleep 1
+expect "altri vini della stessa cantina" "^Altri vini di" 20
+adb shell input swipe 540 700 540 1700 300
 tap "Aggiungi ai preferiti" 20
 expect "avviso per gli ospiti" "Stai usando l'app come ospite" 20
 shot 02-guest-hint
@@ -169,6 +173,33 @@ tap "Invia" 15
 expect "controllo messaggio" "Scrivi un messaggio prima di inviare." 20
 shot 09-support-validation
 tap "Annulla" 15
+
+if [ -f ci/account-test.enabled ]; then
+  echo "== 6b) Ciclo completo dell'account (salva, esci, accedi, elimina)"
+  TESTMAIL="ci-${GITHUB_RUN_ID:-$RANDOM}-$RANDOM@example.invalid"
+  tap "Cantina" 15
+  expect "schermata account da ospite" "Salva la tua cantina|Accedi alla tua cantina" 30
+  if python3 ci/ui.py has "$CUR" "Accedi alla tua cantina"; then tap "Non hai un account? Salva la tua cantina" 15; fi
+  tap "Email" 15
+  adb shell input text "$TESTMAIL"; sleep 1
+  adb shell input keyevent KEYCODE_BACK; sleep 1
+  tap "Salva la mia cantina" 15
+  expect "account creato: sei collegato" "^Sei collegato come" 60
+  shot 08b-account-creato
+  tap "Esci da questo dispositivo" 15
+  tap "Sì, esci" 15
+  expect "uscito: di nuovo ospite" "Salva la tua cantina" 60
+  tap "Hai già un account? Accedi" 15
+  tap "Email" 15
+  adb shell input text "$TESTMAIL"; sleep 1
+  adb shell input keyevent KEYCODE_BACK; sleep 1
+  tap "Accedi" 15
+  expect "accesso con la stessa email" "^Sei collegato come" 60
+  tap "Elimina il mio account" 15
+  tap "Elimina" 15
+  expect "account eliminato: di nuovo ospite" "Salva la tua cantina" 60
+  shot 08c-account-eliminato
+fi
 
 echo "== 7) Apertura senza connessione (mostra l'ultimo catalogo salvato)"
 adb shell svc wifi disable > /dev/null 2>&1

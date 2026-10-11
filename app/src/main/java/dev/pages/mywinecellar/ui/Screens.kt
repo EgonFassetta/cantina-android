@@ -15,6 +15,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -111,6 +115,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
 
     val selected = state.wines.firstOrNull { it.id == selectedId }
     BackHandler(enabled = selected != null) { selectedId = null }
+    BackHandler(enabled = selected == null && tab != 0) { tab = 0 }
 
     Scaffold(
         topBar = {
@@ -205,10 +210,13 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
         snackbarHost = { SnackbarHost(snackbar) },
         containerColor = Parchment,
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
+        Column(
+            Modifier.fillMaxSize().padding(padding),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             if (state.offline) OfflineBanner(onRetry = vm::load)
             state.email?.let { EmailBanner(it) }
-            Box(Modifier.weight(1f).fillMaxWidth()) {
+            Box(Modifier.weight(1f).widthIn(max = 640.dp).fillMaxWidth()) {
                 when {
                     selected != null -> WineDetailScreen(
                         wine = selected,
@@ -217,6 +225,10 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                         onAdd = { vm.addToCart(selected) },
                         onRequest = { availabilityFor = selected },
                         onOpenSite = { url -> uriHandler.openUri(url) },
+                        others = state.wines
+                            .filter { it.cantina.isNotBlank() && it.cantina == selected.cantina && it.id != selected.id }
+                            .take(8),
+                        onOpenOther = { selectedId = it.id },
                     )
                     tab == 3 -> AccountScreen(
                         state = state,
@@ -559,8 +571,11 @@ private fun WineDetailScreen(
     onAdd: () -> Unit,
     onRequest: () -> Unit,
     onOpenSite: (String) -> Unit,
+    others: List<Wine>,
+    onOpenOther: (Wine) -> Unit,
 ) {
-    var zoom by remember { mutableStateOf(false) }
+    var zoom by remember(wine.id) { mutableStateOf(false) }
+    val scroll = remember(wine.id) { ScrollState(0) }
     if (zoom && wine.immagineUrl != null) {
         Dialog(onDismissRequest = { zoom = false }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
             Box(
@@ -576,7 +591,7 @@ private fun WineDetailScreen(
             }
         }
     }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(16.dp)) {
         Box(
             Modifier.fillMaxWidth().then(if (wine.immagineUrl != null) Modifier.clickable { zoom = true } else Modifier),
             contentAlignment = Alignment.Center,
@@ -622,6 +637,25 @@ private fun WineDetailScreen(
         if (wine.sitoProduttore.isNotBlank()) {
             val url = if (wine.sitoProduttore.startsWith("http")) wine.sitoProduttore else "https://${wine.sitoProduttore}"
             TextButton(onClick = { onOpenSite(url) }) { Text("Sito del produttore", color = WineBright) }
+        }
+        if (others.isNotEmpty()) {
+            Spacer(Modifier.height(14.dp))
+            Text("Altri vini di ${wine.cantina}", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Burgundy)
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                others.forEach { other ->
+                    Card(
+                        onClick = { onOpenOther(other) },
+                        colors = CardDefaults.cardColors(containerColor = Cream),
+                        shape = RoundedCornerShape(6.dp),
+                    ) {
+                        Column(Modifier.width(150.dp).padding(10.dp)) {
+                            Text(other.titolo, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            if (other.annata.isNotBlank()) Text(other.annata, color = InkSoft, fontSize = 13.sp)
+                        }
+                    }
+                }
+            }
         }
     }
 }
