@@ -39,7 +39,7 @@ fun CartScreen(
     Column(Modifier.fillMaxSize()) {
         Text(
             "Il tuo carrello",
-            fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Burgundy,
+            fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Accent,
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
         )
         if (lines.isEmpty()) {

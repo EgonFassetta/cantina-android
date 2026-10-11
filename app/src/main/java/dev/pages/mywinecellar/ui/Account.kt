@@ -56,7 +56,7 @@ fun AccountScreen(
         if (state.isGuest) {
             Text(
                 if (loginMode) "Accedi alla tua cantina" else "Salva la tua cantina",
-                fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Burgundy,
+                fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Accent,
             )
             Text(
                 if (loginMode) {
@@ -93,7 +93,7 @@ fun AccountScreen(
                 onClick = { loginMode = !loginMode; error = null },
             ) { Text(if (loginMode) "Non hai un account? Salva la tua cantina" else "Hai già un account? Accedi") }
         } else {
-            Text("La tua cantina", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Burgundy)
+            Text("La tua cantina", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Accent)
             Text("Sei collegato come ${state.email}", color = Ink)
             Text(
                 "Preferiti e carrello sono salvati nel tuo account e li ritrovi su ogni dispositivo.",

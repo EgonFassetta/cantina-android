@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Cantina" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#FF1A1114</item>
+        <item name="android:statusBarColor">#FF2E0A12</item>
+        <item name="android:navigationBarColor">#FF1A1114</item>
+        <item name="android:windowSplashScreenBackground">#FF2E0A12</item>
+    </style>
+</resources>

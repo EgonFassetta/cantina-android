@@ -162,17 +162,17 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Burgundy,
-                    titleContentColor = Parchment,
-                    navigationIconContentColor = Parchment,
-                    actionIconContentColor = Parchment,
+                    titleContentColor = OnBrand,
+                    navigationIconContentColor = OnBrand,
+                    actionIconContentColor = OnBrand,
                 ),
             )
         },
         bottomBar = {
             NavigationBar(containerColor = Cream) {
                 val colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Parchment,
-                    selectedTextColor = Burgundy,
+                    selectedIconColor = OnBrand,
+                    selectedTextColor = Accent,
                     indicatorColor = Burgundy,
                     unselectedIconColor = InkSoft,
                     unselectedTextColor = InkSoft,
@@ -356,7 +356,7 @@ private fun EmailBanner(email: String) {
 @Composable
 fun LoadingView() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(color = Burgundy)
+        CircularProgressIndicator(color = Accent)
     }
 }
 
@@ -451,7 +451,7 @@ private fun FavoritesScreen(
     Column(Modifier.fillMaxSize()) {
         Text(
             "I tuoi preferiti",
-            fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Burgundy,
+            fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Accent,
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
         )
         WineList(
@@ -485,7 +485,7 @@ private fun WineList(
                 groups.forEach { (cantina, list) ->
                     stickyHeader(key = "cantina-$cantina") {
                         Box(Modifier.fillMaxWidth().background(Parchment).padding(vertical = 6.dp, horizontal = 4.dp)) {
-                            Text(cantina, fontWeight = FontWeight.Bold, color = Burgundy, fontSize = 15.sp)
+                            Text(cantina, fontWeight = FontWeight.Bold, color = Accent, fontSize = 15.sp)
                         }
                     }
                     items(list, key = { it.id }) { wine ->
@@ -531,7 +531,7 @@ private fun WineCard(wine: Wine, isFavorite: Boolean, onToggleFavorite: () -> Un
                 if (meta.isNotBlank()) Text(meta, color = InkSoft, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
                     if (wine.inVendita) "Disponibile" else "Non disponibile",
-                    color = if (wine.inVendita) Burgundy else InkSoft,
+                    color = if (wine.inVendita) Accent else InkSoft,
                     fontWeight = FontWeight.Medium, fontSize = 13.sp,
                 )
             }
@@ -597,13 +597,13 @@ private fun WineDetailScreen(
             contentAlignment = Alignment.Center,
         ) { WineThumb(wine, 220) }
         Spacer(Modifier.height(16.dp))
-        Text(wine.titolo, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Burgundy)
+        Text(wine.titolo, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Accent)
         val sub = listOf(wine.cantina, wine.annata).filter { it.isNotBlank() }.joinToString(" · ")
         if (sub.isNotBlank()) Text(sub, color = InkSoft, fontSize = 16.sp)
         Spacer(Modifier.height(12.dp))
         Text(
             if (wine.inVendita) "Disponibile" else "Non disponibile",
-            color = if (wine.inVendita) Burgundy else InkSoft,
+            color = if (wine.inVendita) Accent else InkSoft,
             fontWeight = FontWeight.SemiBold,
         )
         Spacer(Modifier.height(12.dp))
@@ -630,7 +630,7 @@ private fun WineDetailScreen(
         DetailRow("Prezzo", wine.prezzoMostrato?.let { euro(it) } ?: "")
         if (wine.giudizio != null || wine.profilo.isNotEmpty()) {
             Spacer(Modifier.height(14.dp))
-            Text("Profilo del vino", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Burgundy)
+            Text("Profilo del vino", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Accent)
             wine.giudizio?.let { ProfileBar("Giudizio complessivo", it) }
             wine.profilo.forEach { (label, value) -> ProfileBar(label, value) }
         }
@@ -640,7 +640,7 @@ private fun WineDetailScreen(
         }
         if (others.isNotEmpty()) {
             Spacer(Modifier.height(14.dp))
-            Text("Altri vini di ${wine.cantina}", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Burgundy)
+            Text("Altri vini di ${wine.cantina}", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Accent)
             Spacer(Modifier.height(8.dp))
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 others.forEach { other ->
@@ -670,7 +670,7 @@ private fun ProfileBar(label: String, value: Int) {
         LinearProgressIndicator(
             progress = { value.coerceIn(0, 100) / 100f },
             modifier = Modifier.fillMaxWidth().height(6.dp),
-            color = Burgundy,
+            color = Accent,
             trackColor = GoldSoft,
         )
     }

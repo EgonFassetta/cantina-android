@@ -13,8 +13,9 @@ android {
         applicationId = "mywine.cellar"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        // Per ogni nuovo caricamento su Google Play il numero deve crescere: il flusso "Release" lo imposta da solo.
+        versionCode = (System.getenv("VERSION_CODE") ?: "1").toInt()
+        versionName = System.getenv("VERSION_NAME") ?: "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Dati pubblici del progetto Supabase (gli stessi già presenti nel sito web).

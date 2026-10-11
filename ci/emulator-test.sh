@@ -208,6 +208,29 @@ if [ -f ci/account-test.enabled ]; then
   shot 08c-account-eliminato
 fi
 
+echo "== 6c) Tema scuro e testo ingrandito"
+adb shell cmd uimode night yes > /dev/null 2>&1
+adb shell am force-stop $PKG
+adb shell am start -W -n $PKG/$ACT > /dev/null 2>&1
+expect "catalogo con tema scuro" "Disponibile|Non disponibile" 90
+shot 11-scuro-home
+tap "Non disponibile" 20 || tap "Disponibile" 20
+expect "scheda con tema scuro" "Indietro" 30
+shot 12-scuro-scheda
+adb shell cmd uimode night no > /dev/null 2>&1
+adb shell settings put system font_scale 1.5 > /dev/null 2>&1
+adb shell am force-stop $PKG
+adb shell am start -W -n $PKG/$ACT > /dev/null 2>&1
+expect "catalogo con testo ingrandito" "Disponibile|Non disponibile" 90
+shot 13-testo-grande
+tap "Cantina" 20
+expect "schermata account con testo ingrandito" "Salva la tua cantina|Accedi alla tua cantina" 30
+shot 14-testo-grande-account
+adb shell settings put system font_scale 1.0 > /dev/null 2>&1
+adb shell am force-stop $PKG
+adb shell am start -W -n $PKG/$ACT > /dev/null 2>&1
+expect "catalogo di nuovo normale" "Disponibile|Non disponibile" 90
+
 echo "== 7) Apertura senza connessione (mostra l'ultimo catalogo salvato)"
 adb shell svc wifi disable > /dev/null 2>&1
 adb shell svc data disable > /dev/null 2>&1
