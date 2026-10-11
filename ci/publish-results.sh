@@ -11,6 +11,7 @@ mkdir -p "$OUT"
   echo "- Compilazione e test automatici: **$BUILD_OUTCOME**"
   echo "- Prova sull'emulatore: **$EMU_OUTCOME**"
   echo "- File per il Play Store (compilazione senza firma): **$RELEASE_OUTCOME**"
+  echo "- Autoverifica della firma (chiave temporanea): **$SIGNING_OUTCOME**"
   echo "- Data: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo
   echo "## Test automatici (logica)"
@@ -39,6 +40,9 @@ PY
   else
     echo "non eseguita"
   fi
+  echo
+  echo "## Autoverifica della firma"
+  cat "$OUT/signing-selftest.log" 2>/dev/null || echo "non eseguita"
   echo
   echo "## Controlli sul pacchetto"
   cat "$OUT/package-info.txt" 2>/dev/null || echo "non eseguiti"
