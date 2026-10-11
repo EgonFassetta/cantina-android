@@ -9,7 +9,8 @@ Identificativo dell'app: `mywine.cellar`.
 Catalogo con ricerca, filtri (colore, caratteristica, tipo vino, regione) e ordinamento · scheda del vino con profilo ·
 preferiti · carrello e richiesta · richiesta di disponibilità · assistenza · accesso con email ("Salva la tua cantina") ·
 uscita dal dispositivo · eliminazione dell'account · apertura anche senza connessione (ultimo catalogo salvato) ·
-aggiornamento tirando giù la lista · gruppi per cantina · altri vini della stessa cantina · condivisione · foto ingrandibile.
+aggiornamento tirando giù la lista · gruppi per cantina · altri vini della stessa cantina · condivisione · foto ingrandibile ·
+tema chiaro e scuro (segue il telefono) · testo ingrandibile · adattamento ai tablet.
 L'area di amministrazione resta sul sito.
 
 ## Come viene provata (GitHub Actions)
@@ -28,3 +29,7 @@ dell'archivio (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWOR
 La prova "salva la cantina → esci → accedi → elimina l'account" è nel file `ci/emulator-test.sh` e parte solo se esiste
 il file `ci/account-test.enabled`. Va attivata dopo aver pubblicato la funzione `delete-account` su Supabase, così
 l'account di prova viene sempre cancellato a fine test.
+
+## Versioni
+`versionCode` e `versionName` sono nel file `app/build.gradle.kts`: il flusso `Release` imposta da solo un `versionCode`
+crescente (numero dell'esecuzione), come richiesto da Google Play per ogni nuovo caricamento.
