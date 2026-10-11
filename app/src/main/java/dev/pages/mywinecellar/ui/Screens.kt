@@ -363,6 +363,7 @@ fun ErrorView(message: String, onRetry: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CatalogScreen(
     state: AppState,
