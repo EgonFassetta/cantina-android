@@ -19,6 +19,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +49,17 @@ fun AccountScreen(
     var code by rememberSaveable { mutableStateOf("") }
     var loginMode by rememberSaveable { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    // Quando si passa da ospite a collegato (o viceversa) il modulo riparte da capo
+    val wasGuest = rememberSaveable { mutableStateOf(state.isGuest) }
+    LaunchedEffect(state.isGuest) {
+        if (wasGuest.value != state.isGuest) {
+            wasGuest.value = state.isGuest
+            loginMode = false
+            code = ""
+            email = ""
+            error = null
+        }
+    }
     var confirmLogout by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var deleteUnavailable by remember { mutableStateOf(false) }

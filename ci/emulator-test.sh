@@ -228,6 +228,9 @@ if [ -f ci/account-test.enabled ]; then
   expect "account eliminato: di nuovo ospite" "Salva la tua cantina" 60
   shot 08c-account-eliminato
   bad() { echo "ERRORE: $1"; FAIL=1; }
+  echo "--- registro dell'app durante la prova sul server vero:"
+  adb logcat -d -s CantinaApi:I > ci-results/cantina-api.log 2>&1
+  tail -30 ci-results/cantina-api.log
 fi
 
 echo "== 6c) Tema scuro e testo ingrandito"

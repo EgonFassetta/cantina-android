@@ -51,6 +51,7 @@ fun RequestDialog(
     subtitle: String?,
     defaultEmail: String,
     busy: Boolean,
+    externalError: String? = null,
     onDismiss: () -> Unit,
     onSend: (email: String, phone: String, text: String) -> Unit,
 ) {
@@ -104,7 +105,7 @@ fun RequestDialog(
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     )
                 }
-                error?.let {
+                (error ?: externalError)?.let {
                     Text(it, color = MaterialTheme.colorScheme.error, fontSize = 14.sp, modifier = Modifier.padding(top = 8.dp))
                 }
             }

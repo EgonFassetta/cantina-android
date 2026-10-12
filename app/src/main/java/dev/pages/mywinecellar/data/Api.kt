@@ -1,6 +1,7 @@
 package dev.pages.mywinecellar.data
 
 import dev.pages.mywinecellar.BuildConfig
+import android.util.Log
 import java.io.IOException
 import java.net.URLEncoder
 import kotlinx.coroutines.Dispatchers
@@ -107,7 +108,11 @@ class SupabaseApi(
     private suspend fun refreshLocked(current: AuthSession): AuthSession {
         val body = buildJsonObject { put("refresh_token", current.refreshToken) }.toString()
         val r = authPost("/auth/v1/token?grant_type=refresh_token", body, null)
-        if (r.code !in 200..299) throw ApiException(errorMessage(r.body, "Sessione scaduta."), r.code)
+        Log.i("CantinaApi", "rinnovo sessione -> ${r.code}")
+        if (r.code !in 200..299) {
+            Log.w("CantinaApi", "rinnovo sessione rifiutato: ${errorMessage(r.body, "?")}")
+            throw ApiException(errorMessage(r.body, "Sessione scaduta."), r.code)
+        }
         return saveSession(json.decodeFromString<AuthSession>(r.body))
     }
 
@@ -277,6 +282,7 @@ class SupabaseApi(
         }
         val obj = runCatching { json.parseToJsonElement(r.body).jsonObject }.getOrNull()
         val ok = obj?.get("ok")?.jsonPrimitive?.booleanOrNull == true
+        Log.i("CantinaApi", "funzione $name -> ${r.code} ok=$ok")
         if (r.code in 200..299 && ok) return obj!!
         val msg = obj?.get("error")?.jsonPrimitive?.contentOrNull
             ?: obj?.get("message")?.jsonPrimitive?.contentOrNull
@@ -355,7 +361,33 @@ class SupabaseApi(
             }
             throw e
         }
-        refreshSession() // ora il token contiene l'email
+        refreshAfterLink() // ora l'email deve comparire nella sessione
+    }
+
+    /**
+     * Dopo il collegamento dell'email rinnova la sessione. Se il rinnovo viene rifiutato NON si crea una nuova
+     * sessione anonima (si perderebbe l'account appena salvato): si legge l'utente dal server e si aggiorna la sessione.
+     */
+    private suspend fun refreshAfterLink() {
+        val before = currentSession()
+        try {
+            mutex.withLock { refreshLocked(before) }
+            return
+        } catch (e: ApiException) {
+            Log.w("CantinaApi", "rinnovo dopo il collegamento non riuscito (${e.status}): provo a leggere l'utente")
+        }
+        val r = send { token ->
+            Request.Builder()
+                .url("$baseUrl/auth/v1/user")
+                .header("apikey", apiKey)
+                .header("Authorization", "Bearer $token")
+                .get()
+                .build()
+        }
+        Log.i("CantinaApi", "lettura utente -> ${r.code}")
+        if (r.code !in 200..299) throw ApiException(errorMessage(r.body, "Impossibile leggere l'account."), r.code)
+        val user = json.decodeFromString<AuthUser>(r.body)
+        mutex.withLock { saveSession(before.copy(user = user)) }
     }
 
     /**
@@ -395,7 +427,7 @@ class SupabaseApi(
             val s = json.decodeFromJsonElement<AuthSession>(raw)
             mutex.withLock { saveSession(s) }
         } else {
-            refreshSession() // ora il token contiene l'email
+            refreshAfterLink() // ora l'email deve comparire nella sessione
         }
     }
 

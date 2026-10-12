@@ -245,24 +245,24 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     // ------------------------------------------------------------ richieste
 
-    private fun runBusy(success: String?, block: suspend () -> Unit, onDone: (Boolean) -> Unit = {}) {
+    /** Esegue un invio: se riesce mostra [success], se fallisce passa il messaggio a [onDone] (la finestra lo mostra al suo interno). */
+    private fun runBusy(success: String?, block: suspend () -> Unit, onDone: (Boolean, String?) -> Unit = { _, _ -> }) {
         viewModelScope.launch {
             _state.update { it.copy(busy = true) }
-            var ok = false
+            var error: String? = null
             try {
                 block()
-                ok = true
                 if (success != null) say(success)
             } catch (e: Exception) {
-                say(friendlyError(e))
+                error = friendlyError(e)
             } finally {
                 _state.update { it.copy(busy = false) }
-                onDone(ok)
+                onDone(error == null, error)
             }
         }
     }
 
-    fun sendCart(email: String, phone: String, onDone: (Boolean) -> Unit) = runBusy(
+    fun sendCart(email: String, phone: String, onDone: (Boolean, String?) -> Unit) = runBusy(
         success = "Richiesta inviata. Ti ricontatteremo presto.",
         block = {
             api.requestCart(email, phone, _state.value.cart)
@@ -272,10 +272,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         onDone = onDone,
     )
 
-    fun sendAvailability(wineId: String, email: String, phone: String, note: String, onDone: (Boolean) -> Unit) =
+    fun sendAvailability(wineId: String, email: String, phone: String, note: String, onDone: (Boolean, String?) -> Unit) =
         runBusy("Richiesta inviata. Ti ricontatteremo presto.", { api.requestAvailability(wineId, email, phone, note) }, onDone)
 
-    fun sendSupport(email: String, phone: String, message: String, onDone: (Boolean) -> Unit) =
+    fun sendSupport(email: String, phone: String, message: String, onDone: (Boolean, String?) -> Unit) =
         runBusy("Messaggio inviato. Grazie!", { api.sendSupport(email, phone, message) }, onDone)
 
     // ------------------------------------------------------------ account

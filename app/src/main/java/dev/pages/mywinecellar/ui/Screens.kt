@@ -112,6 +112,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
     var showSendCart by remember { mutableStateOf(false) }
     var showSupport by remember { mutableStateOf(false) }
     var showFilters by remember { mutableStateOf(false) }
+    var requestError by remember { mutableStateOf<String?>(null) }
 
     val selected = state.wines.firstOrNull { it.id == selectedId }
     BackHandler(enabled = selected != null) { selectedId = null }
@@ -282,9 +283,13 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
             subtitle = wine.titolo,
             defaultEmail = state.email.orEmpty(),
             busy = state.busy,
-            onDismiss = { availabilityFor = null },
+            externalError = requestError,
+            onDismiss = { availabilityFor = null; requestError = null },
             onSend = { email, phone, text ->
-                vm.sendAvailability(wine.id, email, phone, text) { ok -> if (ok) availabilityFor = null }
+                requestError = null
+                vm.sendAvailability(wine.id, email, phone, text) { ok, msg ->
+                    if (ok) { availabilityFor = null; requestError = null } else requestError = msg
+                }
             },
         )
     }
@@ -294,9 +299,13 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
             subtitle = "${state.cartCount} bottiglie · ${state.cartTotalText.replaceFirstChar { it.lowercase() }}",
             defaultEmail = state.email.orEmpty(),
             busy = state.busy,
-            onDismiss = { showSendCart = false },
+            externalError = requestError,
+            onDismiss = { showSendCart = false; requestError = null },
             onSend = { email, phone, _ ->
-                vm.sendCart(email, phone) { ok -> if (ok) showSendCart = false }
+                requestError = null
+                vm.sendCart(email, phone) { ok, msg ->
+                    if (ok) { showSendCart = false; requestError = null } else requestError = msg
+                }
             },
         )
     }
@@ -306,9 +315,13 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
             subtitle = null,
             defaultEmail = state.email.orEmpty(),
             busy = state.busy,
-            onDismiss = { showSupport = false },
+            externalError = requestError,
+            onDismiss = { showSupport = false; requestError = null },
             onSend = { email, phone, text ->
-                vm.sendSupport(email, phone, text) { ok -> if (ok) showSupport = false }
+                requestError = null
+                vm.sendSupport(email, phone, text) { ok, msg ->
+                    if (ok) { showSupport = false; requestError = null } else requestError = msg
+                }
             },
         )
     }
