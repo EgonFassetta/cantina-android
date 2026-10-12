@@ -361,33 +361,10 @@ class SupabaseApi(
             }
             throw e
         }
-        refreshAfterLink() // ora l'email deve comparire nella sessione
-    }
-
-    /**
-     * Dopo il collegamento dell'email rinnova la sessione. Se il rinnovo viene rifiutato NON si crea una nuova
-     * sessione anonima (si perderebbe l'account appena salvato): si legge l'utente dal server e si aggiorna la sessione.
-     */
-    private suspend fun refreshAfterLink() {
-        val before = currentSession()
-        try {
-            mutex.withLock { refreshLocked(before) }
-            return
-        } catch (e: ApiException) {
-            Log.w("CantinaApi", "rinnovo dopo il collegamento non riuscito (${e.status}): provo a leggere l'utente")
-        }
-        val r = send { token ->
-            Request.Builder()
-                .url("$baseUrl/auth/v1/user")
-                .header("apikey", apiKey)
-                .header("Authorization", "Bearer $token")
-                .get()
-                .build()
-        }
-        Log.i("CantinaApi", "lettura utente -> ${r.code}")
-        if (r.code !in 200..299) throw ApiException(errorMessage(r.body, "Impossibile leggere l'account."), r.code)
-        val user = json.decodeFromString<AuthUser>(r.body)
-        mutex.withLock { saveSession(before.copy(user = user)) }
+        // Appena l'email è collegata il server annulla la sessione da ospite (refresh token e account letto dal
+        // server non valgono più). L'account però è lo stesso (stesso id: preferiti e carrello restano):
+        // basta entrare con quell'email per avere subito una sessione nuova e valida.
+        loginEmail(email)
     }
 
     /**
@@ -422,13 +399,12 @@ class SupabaseApi(
             },
             "Codice non valido.",
         )
-        if (purpose == "login") {
-            val raw = obj["session"]?.jsonObject ?: throw ApiException("Accesso non riuscito.")
-            val s = json.decodeFromJsonElement<AuthSession>(raw)
-            mutex.withLock { saveSession(s) }
-        } else {
-            refreshAfterLink() // ora l'email deve comparire nella sessione
-        }
+        // In entrambi i casi il server restituisce la sessione nuova e valida (per "link" quella dell'account
+        // appena collegato: la vecchia sessione da ospite viene annullata dal server).
+        val raw = obj["session"]?.jsonObject
+            ?: throw ApiException(if (purpose == "login") "Accesso non riuscito." else "Salvataggio non riuscito.")
+        val s = json.decodeFromJsonElement<AuthSession>(raw)
+        mutex.withLock { saveSession(s) }
     }
 
     /** Accesso con una email già registrata. */

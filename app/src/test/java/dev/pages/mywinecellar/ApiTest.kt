@@ -169,6 +169,37 @@ class ApiTest {
     }
 
     @Test
+    fun salvareLaCantinaPoiEntraConUnaSessioneNuova() = runTest {
+        api = newApi(logged)
+        server.enqueue(MockResponse().setBody("""{"ok":true}"""))   // collegamento dell'email
+        server.enqueue(
+            MockResponse().setBody(
+                """{"ok":true,"session":{"access_token":"AT7","refresh_token":"RT7","user":{"id":"u1","email":"a@b.it"}}}""",
+            ),
+        )                                                               // accesso con la stessa email
+        api.linkEmail("a@b.it")
+        assertEquals(2, server.requestCount)
+        assertEquals("a@b.it", api.session?.email)
+        assertEquals("AT7", store.load()?.accessToken)
+    }
+
+    @Test
+    fun verificaDelCodiceDiCollegamentoSalvaLaSessioneDelServer() = runTest {
+        api = newApi(logged)
+        server.enqueue(
+            MockResponse().setBody(
+                """{"ok":true,"session":{"access_token":"AT8","refresh_token":"RT8","user":{"id":"u1","email":"a@b.it"}}}""",
+            ),
+        )
+        api.verifyCode("a@b.it", "123456", "link")
+        assertEquals("a@b.it", api.session?.email)
+        assertEquals("AT8", store.load()?.accessToken)
+        val body = server.takeRequest().body.readUtf8()
+        assertTrue(body.contains("\"action\":\"verify_code\""))
+        assertTrue(body.contains("\"purpose\":\"link\""))
+    }
+
+    @Test
     fun accessoConEmailSalvaLaNuovaSessione() = runTest {
         api = newApi(logged)
         server.enqueue(

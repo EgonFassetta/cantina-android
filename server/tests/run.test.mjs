@@ -170,6 +170,7 @@ test('code: salvare la cantina collega l\'email solo dopo il codice', async () =
   const r = await call({ action: 'verify_code', email: 'nuovo@b.it', code: lastCode(), purpose: 'link' }, { token: tk })
   assert.equal(r.body.ok, true)
   assert.equal(mock.users.get('anon1').email, 'nuovo@b.it')
+  assert.equal(r.body.session.access_token, 'S-anon1', 'dopo il collegamento arriva una sessione nuova per lo stesso utente')
 })
 
 test('code: email già registrata nel collegamento = messaggio chiaro; account non anonimo rifiutato', async () => {

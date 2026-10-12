@@ -28,6 +28,11 @@ function newSession(user) {
   sessions.set(at, user.id); refreshes.set(rt, user.id)
   return { access_token: at, refresh_token: rt, user: { id: user.id, email: user.email || '', is_anonymous: !!user.is_anonymous } }
 }
+// Come sul server vero: dopo il collegamento dell'email il refresh token dell'ospite non vale più
+// (il token di accesso resta valido finché non scade, quindi le funzioni lo accettano ancora).
+function revokeRefresh(uid) {
+  for (const [rt, id] of [...refreshes.entries()]) if (id === uid) refreshes.delete(rt)
+}
 function send(res, status, body) {
   res.writeHead(status, { 'Content-Type': 'application/json' })
   res.end(body === undefined ? '' : JSON.stringify(body))
@@ -121,7 +126,7 @@ http.createServer(async (req, res) => {
     if (body.action === 'mode') return send(res, 200, { ok: true, mode })
     if (body.action === 'link' || body.action === 'login') {
       if (mode === 'code') return send(res, 403, { ok: false, code: 'code_required', error: 'Per accedere serve il codice inviato via email.' })
-      if (body.action === 'link') { users.get(uid).email = email; return send(res, 200, { ok: true }) }
+      if (body.action === 'link') { users.get(uid).email = email; revokeRefresh(uid); return send(res, 200, { ok: true }) }
       const found = [...users.values()].find((x) => x.email === email)
       if (!found) return send(res, 401, { ok: false, error: 'Invalid login credentials' })
       return send(res, 200, { ok: true, session: newSession(found) })
@@ -134,7 +139,10 @@ http.createServer(async (req, res) => {
     if (body.action === 'verify_code') {
       if (codes.get(`${email}|${purpose}`) !== String(body.code)) return send(res, 400, { ok: false, error: 'Codice non corretto.' })
       codes.delete(`${email}|${purpose}`)
-      if (purpose === 'link') { users.get(uid).email = email; return send(res, 200, { ok: true }) }
+      if (purpose === 'link') {
+        users.get(uid).email = email; revokeRefresh(uid)
+        return send(res, 200, { ok: true, session: newSession(users.get(uid)) })
+      }
       let found = [...users.values()].find((x) => x.email === email)
       if (!found) { found = { id: rnd(), email, is_anonymous: false }; users.set(found.id, found) }
       return send(res, 200, { ok: true, session: newSession(found) })

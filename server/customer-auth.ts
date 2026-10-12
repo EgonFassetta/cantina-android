@@ -275,7 +275,17 @@ Deno.serve(async (req) => {
       }
 
       await admin.from('login_codes').update({ used: true }).eq('id', row.id)
-      return purpose === 'link' ? await doLink(user, email) : await doLogin(email)
+      if (purpose === 'login') return await doLogin(email)
+
+      // "link": appena l'email è collegata Supabase annulla la sessione da ospite, quindi restituiamo
+      // subito una sessione nuova (stesso utente, stesso id) con cui il client può continuare.
+      const linked = await doLink(user, email)
+      if (linked.status !== 200) return linked
+      const linkedBody = await linked.json()
+      const login = await doLogin(email)
+      const loginBody = await login.json()
+      if (!loginBody.ok) return json(loginBody, login.status)
+      return json({ ok: true, user: linkedBody.user, message: linkedBody.message, session: loginBody.session })
     }
 
     return json({ ok: false, error: 'Azione non riconosciuta.' }, 400)
