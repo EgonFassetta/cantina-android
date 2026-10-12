@@ -1,0 +1,2 @@
+Prova attiva: il file serve solo da interruttore. Per spegnerla basta cancellarlo.
+Crea un account con un'email finta (ci-...@example.invalid), esce, rientra e lo elimina con la funzione delete-account.
