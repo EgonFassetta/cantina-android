@@ -30,6 +30,12 @@ import kotlinx.coroutines.launch
 
 data class CartLine(val wine: Wine, val qty: Int)
 
+/** Per cosa serve il codice: salvare la cantina con una nuova email oppure entrare con un'email già registrata. */
+enum class AccessPurpose(val wire: String) { LINK("link"), LOGIN("login") }
+
+/** Il codice è stato inviato a [email]: la schermata aspetta che venga inserito. */
+data class CodeStep(val email: String, val purpose: AccessPurpose)
+
 data class AppState(
     val loading: Boolean = true,
     val error: String? = null,
@@ -51,6 +57,7 @@ data class AppState(
     val offline: Boolean = false,
     /** True mentre l'elenco si aggiorna (tirando giù la lista). */
     val refreshing: Boolean = false,
+    val codeStep: CodeStep? = null,
 ) {
     val activeFilters: Int get() = listOf(colore, caratteristica, tipoVino, regione).count { it != null }
     val colori: List<String> get() = distinctValues(wines) { it.coloreVino }
@@ -273,13 +280,26 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     // ------------------------------------------------------------ account
 
-    fun saveCellar(email: String, onDone: (Boolean, String?) -> Unit) {
+    private fun doneMessage(purpose: AccessPurpose) =
+        if (purpose == AccessPurpose.LINK) "Cantina salvata. Potrai ritrovarla accedendo con la tua email."
+        else "Bentornato nella tua cantina."
+
+    /**
+     * Avvia "Salva la cantina" o "Accedi". Se il server richiede il codice via email lo fa partire e la
+     * schermata passa al passo del codice; altrimenti (modalità attuale) completa subito l'operazione.
+     */
+    fun startAccess(email: String, purpose: AccessPurpose, onDone: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
             _state.update { it.copy(busy = true) }
             try {
-                api.linkEmail(email)
-                refreshUserData()
-                say("Cantina salvata. Potrai ritrovarla accedendo con la tua email.")
+                if (api.accessMode(email) == "code") {
+                    api.requestCode(email, purpose.wire)
+                    _state.update { it.copy(codeStep = CodeStep(email, purpose)) }
+                } else {
+                    if (purpose == AccessPurpose.LINK) api.linkEmail(email) else api.loginEmail(email)
+                    refreshUserData()
+                    say(doneMessage(purpose))
+                }
                 onDone(true, null)
             } catch (e: Exception) {
                 onDone(false, friendlyError(e))
@@ -289,13 +309,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun login(email: String, onDone: (Boolean, String?) -> Unit) {
+    /** Controlla il codice di 6 cifre inserito. */
+    fun confirmCode(code: String, onDone: (Boolean, String?) -> Unit) {
+        val step = _state.value.codeStep ?: return
         viewModelScope.launch {
             _state.update { it.copy(busy = true) }
             try {
-                api.loginEmail(email)
+                api.verifyCode(step.email, code, step.purpose.wire)
+                _state.update { it.copy(codeStep = null) }
                 refreshUserData()
-                say("Bentornato nella tua cantina.")
+                say(doneMessage(step.purpose))
                 onDone(true, null)
             } catch (e: Exception) {
                 onDone(false, friendlyError(e))
@@ -304,6 +327,26 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
     }
+
+    /** Invia un nuovo codice alla stessa email. */
+    fun resendCode(onDone: (Boolean, String?) -> Unit) {
+        val step = _state.value.codeStep ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(busy = true) }
+            try {
+                api.requestCode(step.email, step.purpose.wire)
+                say("Ti abbiamo inviato un nuovo codice.")
+                onDone(true, null)
+            } catch (e: Exception) {
+                onDone(false, friendlyError(e))
+            } finally {
+                _state.update { it.copy(busy = false) }
+            }
+        }
+    }
+
+    /** Torna al modulo dell'email senza completare l'accesso. */
+    fun cancelCode() = _state.update { it.copy(codeStep = null) }
 
     fun logoutDevice() {
         viewModelScope.launch {

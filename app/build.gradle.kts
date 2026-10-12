@@ -37,6 +37,13 @@ android {
     }
 
     buildTypes {
+        // Variante solo per le prove automatiche: parla con un server simulato sul computer di prova
+        // (10.0.2.2 = il computer che ospita l'emulatore). Non viene mai pubblicata.
+        create("fake") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".fake"
+            buildConfigField("String", "SUPABASE_URL", "\"http://10.0.2.2:8787\"")
+        }
         release {
             isMinifyEnabled = false
             if (keystorePath != null) signingConfig = signingConfigs.getByName("release")

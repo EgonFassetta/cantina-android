@@ -232,8 +232,10 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                     )
                     tab == 3 -> AccountScreen(
                         state = state,
-                        onSave = vm::saveCellar,
-                        onLogin = vm::login,
+                        onStart = vm::startAccess,
+                        onConfirmCode = vm::confirmCode,
+                        onResendCode = vm::resendCode,
+                        onCancelCode = vm::cancelCode,
                         onLogout = vm::logoutDevice,
                         onDelete = vm::deleteAccount,
                         onSupport = { showSupport = true },

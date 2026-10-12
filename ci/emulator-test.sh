@@ -50,6 +50,28 @@ tap() {
 
 shot() { adb exec-out screencap -p > "ci-results/$1.png"; }
 
+# Chiude la tastiera solo se è davvero aperta (altrimenti il tasto indietro cambierebbe schermata).
+hide_keyboard() {
+  if adb shell dumpsys input_method 2>/dev/null | grep -q "mInputShown=true"; then adb shell input keyevent KEYCODE_BACK; fi
+  sleep 2
+}
+
+# Tocca il campo con quell'etichetta, svuota il contenuto e scrive il testo (gli spazi diventano %s per adb).
+type_into() {
+  tap "$1" 15 || return 1
+  adb shell input keyevent KEYCODE_MOVE_END
+  for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do adb shell input keyevent KEYCODE_DEL; done
+  adb shell input text "$(printf '%s' "$2" | sed 's/ /%s/g')"
+  sleep 1
+  hide_keyboard
+}
+
+# Controlli sullo stato del server simulato (solo per la prova con la variante "fake").
+fake_state() { curl -s localhost:8787/_state; }
+fake_check() { # descrizione, condizione in Python sulla variabile s (lo stato)
+  if fake_state | python3 -c "import sys,json; s=json.load(sys.stdin); sys.exit(0 if ($2) else 1)"; then ok "$1"; else bad "$1 (server: $(fake_state | head -c 300))"; fi
+}
+
 adb shell settings put global hide_error_dialogs 1 > /dev/null 2>&1
 adb install -r "$APK" 2>&1 | tee ci-results/install.log
 adb logcat -c
@@ -182,14 +204,15 @@ shot 09-support-validation
 tap "Annulla" 15
 
 if [ -f ci/account-test.enabled ]; then
-  echo "== 6b) Ciclo completo dell'account (salva, esci, accedi, elimina)"
+  echo "== 6b) Ciclo completo dell'account sul server VERO (salva, esci, accedi, elimina)"
+  # Questa prova tocca il database vero: se qualcosa non va è un AVVISO, non blocca la pubblicazione dell'APK.
+  bad() { echo "AVVISO (prova sul server vero): $1"; }
   TESTMAIL="ci-${GITHUB_RUN_ID:-$RANDOM}-$RANDOM@example.invalid"
   tap "Cantina" 15
   expect "schermata account da ospite" "Salva la tua cantina|Accedi alla tua cantina" 30
   if python3 ci/ui.py has "$CUR" "Accedi alla tua cantina"; then tap "Non hai un account? Salva la tua cantina" 15; fi
-  tap "Email" 15
-  adb shell input text "$TESTMAIL"; sleep 1
-  adb shell input keyevent KEYCODE_BACK; sleep 1
+  type_into "Email" "$TESTMAIL"
+  shot 08a-email-scritta
   tap "Salva la mia cantina" 15
   expect "account creato: sei collegato" "^Sei collegato come" 60
   shot 08b-account-creato
@@ -197,15 +220,14 @@ if [ -f ci/account-test.enabled ]; then
   tap "Sì, esci" 15
   expect "uscito: di nuovo ospite" "Salva la tua cantina" 60
   tap "Hai già un account? Accedi" 15
-  tap "Email" 15
-  adb shell input text "$TESTMAIL"; sleep 1
-  adb shell input keyevent KEYCODE_BACK; sleep 1
+  type_into "Email" "$TESTMAIL"
   tap "Accedi" 15
   expect "accesso con la stessa email" "^Sei collegato come" 60
   tap "Elimina il mio account" 15
   tap "Elimina" 15
   expect "account eliminato: di nuovo ospite" "Salva la tua cantina" 60
   shot 08c-account-eliminato
+  bad() { echo "ERRORE: $1"; FAIL=1; }
 fi
 
 echo "== 6c) Tema scuro e testo ingrandito"
@@ -230,6 +252,109 @@ adb shell settings put system font_scale 1.0 > /dev/null 2>&1
 adb shell am force-stop $PKG
 adb shell am start -W -n $PKG/$ACT > /dev/null 2>&1
 expect "catalogo di nuovo normale" "Disponibile|Non disponibile" 90
+
+FAPK=app/build/outputs/apk/fake/app-fake.apk
+FPKG=mywine.cellar.fake
+if [ -f "$FAPK" ] && curl -s localhost:8787/_state > /dev/null 2>&1; then
+  echo "== 6d) Prove con server simulato: accesso con codice, richieste, eliminazione"
+  adb install -r "$FAPK" 2>&1 | tail -1
+  adb shell pm clear $FPKG > /dev/null 2>&1
+  curl -s -X POST localhost:8787/_mode -d '{"mode":"code"}' > /dev/null
+  adb shell am start -W -n $FPKG/$ACT > /dev/null 2>&1
+  expect "catalogo dal server simulato" "Disponibile|Non disponibile" 60
+
+  echo "-- salvare la cantina con il codice"
+  tap "Cantina" 15
+  expect "schermata account da ospite" "Salva la tua cantina" 30
+  type_into "Email" "prova@esempio.it"
+  tap "Salva la mia cantina" 15
+  expect "passo del codice" "Controlla la tua email" 30
+  shot 15-passo-codice
+  type_into "Codice" "000000"
+  tap "Conferma" 15
+  expect "codice sbagliato rifiutato" "Codice non corretto." 20
+  CODE=$(fake_state | python3 -c "import sys,json; print(json.load(sys.stdin)['lastCode'])")
+  type_into "Codice" "$CODE"
+  tap "Conferma" 15
+  expect "cantina salvata: sei collegato" "^Sei collegato come" 30
+  fake_check "il server ha collegato l'email all'account" "any(u['email']=='prova@esempio.it' for u in s['users'])"
+  shot 16-collegato
+
+  echo "-- richiesta dal carrello"
+  tap "Catalogo" 15
+  expect "elenco" "Solo disponibili" 30
+  tap "Solo disponibili" 15
+  sleep 2
+  tap "Disponibile" 15
+  expect "scheda con pulsante carrello" "Aggiungi al carrello" 30
+  tap "Aggiungi al carrello" 15
+  tap "Indietro" 15
+  tap "Carrello" 15
+  expect "carrello con il vino" "^Totale stimato|^Prezzo da concordare" 30
+  tap "Invia richiesta" 15
+  expect "finestra della richiesta" "Invia la richiesta" 20
+  type_into "Telefono (obbligatorio)" "3331234567"
+  tap "Invia" 15
+  expect "carrello svuotato dopo l'invio" "^Il carrello è vuoto" 30
+  fake_check "il server ha ricevuto la richiesta del carrello" "any(r.get('type')=='cart' and r['phone']=='3331234567' and r['email']=='prova@esempio.it' and len(r['items'])==1 for r in s['requests'])"
+
+  echo "-- richiesta di disponibilità"
+  tap "Catalogo" 15
+  expect "elenco" "Solo disponibili" 30
+  tap "Tutti" 15
+  sleep 2
+  tap "Non disponibile" 15
+  expect "scheda del vino non disponibile" "Richiedi disponibilità" 30
+  tap "Richiedi disponibilità" 15
+  expect "finestra della richiesta" "Invia" 20
+  tap "Invia" 15
+  expect "conferma di invio" "^Richiesta inviata" 30
+  fake_check "il server ha ricevuto la richiesta di disponibilità" "any(r.get('type')=='availability' and r['wine_id']=='w2' for r in s['requests'])"
+  tap "Indietro" 15
+
+  echo "-- assistenza: invio riuscito e limite di richieste"
+  tap "Cantina" 15
+  tap "Scrivici un messaggio" 15
+  type_into "Messaggio" "Ciao dal test"
+  tap "Invia" 15
+  expect "messaggio inviato" "^Messaggio inviato" 30
+  fake_check "il server ha ricevuto il messaggio" "any(r.get('type')=='support' and r['message']=='Ciao dal test' for r in s['requests'])"
+  tap "Scrivici un messaggio" 15
+  type_into "Messaggio" "LIMITE"
+  tap "Invia" 15
+  expect "messaggio del limite di richieste" "^Hai inviato troppe richieste" 30
+  shot 17-limite-richieste
+  tap "Annulla" 15
+
+  echo "-- uscire e rientrare con il codice"
+  tap "Esci da questo dispositivo" 15
+  tap "Sì, esci" 15
+  expect "di nuovo ospite" "Salva la tua cantina" 30
+  tap "Hai già un account? Accedi" 15
+  type_into "Email" "prova@esempio.it"
+  tap "Accedi" 15
+  expect "passo del codice per l'accesso" "Controlla la tua email" 30
+  CODE=$(fake_state | python3 -c "import sys,json; print(json.load(sys.stdin)['lastCode'])")
+  type_into "Codice" "$CODE"
+  tap "Conferma" 15
+  expect "rientrato con il codice" "^Sei collegato come" 30
+
+  echo "-- eliminare l'account"
+  tap "Elimina il mio account" 15
+  tap "Elimina" 15
+  expect "account eliminato: di nuovo ospite" "Salva la tua cantina" 30
+  fake_check "il server ha eliminato l'utente" "not any(u['email']=='prova@esempio.it' for u in s['users'])"
+
+  echo "-- modalità attuale (senza codice): tutto come prima"
+  curl -s -X POST localhost:8787/_mode -d '{"mode":"legacy"}' > /dev/null
+  type_into "Email" "vecchia@esempio.it"
+  tap "Salva la mia cantina" 15
+  expect "salvataggio immediato senza codice" "^Sei collegato come" 30
+  shot 18-modalita-attuale
+  adb shell am force-stop $FPKG
+else
+  echo "SALTATO: variante di prova o server simulato non disponibili"
+fi
 
 echo "== 7) Apertura senza connessione (mostra l'ultimo catalogo salvato)"
 adb shell svc wifi disable > /dev/null 2>&1

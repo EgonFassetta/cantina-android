@@ -358,6 +358,47 @@ class SupabaseApi(
         refreshSession() // ora il token contiene l'email
     }
 
+    /**
+     * Come deve comportarsi l'accesso: "code" = serve il codice via email, "legacy" = solo email (come prima).
+     * Se il server è ancora la versione vecchia (non conosce questa domanda) si resta su "legacy".
+     */
+    suspend fun accessMode(email: String): String = try {
+        callFunction(
+            "customer-auth",
+            buildJsonObject { put("action", "mode"); put("email", email) },
+            "Modalità non disponibile.",
+        )["mode"]?.jsonPrimitive?.contentOrNull ?: "legacy"
+    } catch (e: ApiException) {
+        "legacy"
+    }
+
+    /** Chiede l'invio del codice di 6 cifre all'email. purpose: "login" oppure "link". */
+    suspend fun requestCode(email: String, purpose: String) {
+        callFunction(
+            "customer-auth",
+            buildJsonObject { put("action", "request_code"); put("email", email); put("purpose", purpose) },
+            "Non riesco a inviare il codice.",
+        )
+    }
+
+    /** Controlla il codice: per "login" salva la nuova sessione, per "link" collega l'email alla sessione ospite. */
+    suspend fun verifyCode(email: String, code: String, purpose: String) {
+        val obj = callFunction(
+            "customer-auth",
+            buildJsonObject {
+                put("action", "verify_code"); put("email", email); put("code", code); put("purpose", purpose)
+            },
+            "Codice non valido.",
+        )
+        if (purpose == "login") {
+            val raw = obj["session"]?.jsonObject ?: throw ApiException("Accesso non riuscito.")
+            val s = json.decodeFromJsonElement<AuthSession>(raw)
+            mutex.withLock { saveSession(s) }
+        } else {
+            refreshSession() // ora il token contiene l'email
+        }
+    }
+
     /** Accesso con una email già registrata. */
     suspend fun loginEmail(email: String) {
         val obj = callFunction(

@@ -35,14 +35,17 @@ import dev.pages.mywinecellar.data.isValidEmail
 @Composable
 fun AccountScreen(
     state: AppState,
-    onSave: (String, (Boolean, String?) -> Unit) -> Unit,
-    onLogin: (String, (Boolean, String?) -> Unit) -> Unit,
+    onStart: (String, AccessPurpose, (Boolean, String?) -> Unit) -> Unit,
+    onConfirmCode: (String, (Boolean, String?) -> Unit) -> Unit,
+    onResendCode: ((Boolean, String?) -> Unit) -> Unit,
+    onCancelCode: () -> Unit,
     onLogout: () -> Unit,
     onDelete: (onUnavailable: () -> Unit) -> Unit,
     onSupport: () -> Unit,
     onPrivacy: () -> Unit,
 ) {
     var email by rememberSaveable { mutableStateOf("") }
+    var code by rememberSaveable { mutableStateOf("") }
     var loginMode by rememberSaveable { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var confirmLogout by remember { mutableStateOf(false) }
@@ -53,7 +56,41 @@ fun AccountScreen(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        if (state.isGuest) {
+        val step = state.codeStep
+        if (state.isGuest && step != null) {
+            Text("Controlla la tua email", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Accent)
+            Text(
+                "Abbiamo inviato un codice di 6 cifre a ${step.email}. Vale 10 minuti. " +
+                    "Se non lo vedi, controlla anche la posta indesiderata.",
+                color = InkSoft,
+            )
+            OutlinedTextField(
+                value = code,
+                onValueChange = { v -> code = v.filter { it.isDigit() }.take(6) },
+                label = { Text("Codice") }, singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            error?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 14.sp) }
+            Button(
+                enabled = !state.busy,
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    if (code.length != 6) {
+                        error = "Inserisci il codice di 6 cifre."
+                    } else {
+                        error = null
+                        onConfirmCode(code) { ok, msg -> if (ok) code = "" else error = msg }
+                    }
+                },
+            ) { Text("Conferma") }
+            OutlinedButton(
+                enabled = !state.busy,
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { error = null; onResendCode { ok, msg -> if (!ok) error = msg } },
+            ) { Text("Invia un nuovo codice") }
+            TextButton(onClick = { error = null; code = ""; onCancelCode() }) { Text("Cambia email", color = WineBright) }
+        } else if (state.isGuest) {
             Text(
                 if (loginMode) "Accedi alla tua cantina" else "Salva la tua cantina",
                 fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Accent,
@@ -84,7 +121,7 @@ fun AccountScreen(
                     } else {
                         error = null
                         val done: (Boolean, String?) -> Unit = { ok, msg -> if (!ok) error = msg }
-                        if (loginMode) onLogin(e, done) else onSave(e, done)
+                        onStart(e, if (loginMode) AccessPurpose.LOGIN else AccessPurpose.LINK, done)
                     }
                 },
             ) { Text(if (loginMode) "Accedi" else "Salva la mia cantina") }

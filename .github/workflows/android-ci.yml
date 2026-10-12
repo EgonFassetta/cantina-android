@@ -29,12 +29,21 @@ jobs:
       - name: Prepara la cartella dei risultati
         run: mkdir -p ci-results
 
+      - name: Prova la funzione customer-auth del server (accesso con codice)
+        id: server_tests
+        continue-on-error: true
+        working-directory: server
+        run: |
+          set -o pipefail
+          npm ci --no-audit --no-fund
+          npm test 2>&1 | tee ../ci-results/server-tests.log
+
       - name: Compila e prova la logica (test automatici)
         id: build
         run: |
           set -o pipefail
           chmod +x gradlew
-          ./gradlew --no-daemon --console=plain testDebugUnitTest assembleDebug 2>&1 | tee ci-results/build.log
+          ./gradlew --no-daemon --console=plain testDebugUnitTest assembleDebug assembleFake 2>&1 | tee ci-results/build.log
 
       - name: Verifica la compilazione del file per il Play Store (senza firma)
         id: release_check
@@ -84,6 +93,12 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: Avvia il server simulato (per le prove di accesso con codice e richieste)
+        run: |
+          nohup node ci/fake-supabase.mjs > ci-results/fake-server.log 2>&1 &
+          sleep 2
+          curl -s localhost:8787/_state | head -c 200
+
       - name: Prova l'app sull'emulatore
         id: emulator
         if: steps.build.outcome == 'success'
@@ -113,4 +128,5 @@ jobs:
           EMU_OUTCOME: ${{ steps.emulator.outcome }}
           RELEASE_OUTCOME: ${{ steps.release_check.outcome }}
           SIGNING_OUTCOME: ${{ steps.signing_check.outcome }}
+          SERVER_TESTS_OUTCOME: ${{ steps.server_tests.outcome }}
         run: bash ci/publish-results.sh

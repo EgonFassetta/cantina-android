@@ -9,3 +9,5 @@
 *.keystore
 *.jks
 ci-results/
+server/node_modules/
+server/tests/.tmp/

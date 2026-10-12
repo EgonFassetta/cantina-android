@@ -12,6 +12,7 @@ mkdir -p "$OUT"
   echo "- Prova sull'emulatore: **$EMU_OUTCOME**"
   echo "- File per il Play Store (compilazione senza firma): **$RELEASE_OUTCOME**"
   echo "- Autoverifica della firma (chiave temporanea): **$SIGNING_OUTCOME**"
+  echo "- Funzione customer-auth del server (test): **$SERVER_TESTS_OUTCOME**"
   echo "- Data: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo
   echo "## Test automatici (logica)"
@@ -40,6 +41,9 @@ PY
   else
     echo "non eseguita"
   fi
+  echo
+  echo "## Funzione customer-auth (accesso con codice)"
+  grep -E "^# (tests|pass|fail)|^not ok" "$OUT/server-tests.log" 2>/dev/null || echo "non eseguita"
   echo
   echo "## Autoverifica della firma"
   cat "$OUT/signing-selftest.log" 2>/dev/null || echo "non eseguita"
