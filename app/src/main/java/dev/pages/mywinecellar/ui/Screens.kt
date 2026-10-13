@@ -95,6 +95,13 @@ import java.util.Locale
 
 private const val PRIVACY_URL = "https://mywinecellar.pages.dev/privacy.html"
 
+/** Testo mostrato per la disponibilità (come sul sito: "Riservata" se tutte le bottiglie sono riservate). */
+fun statoVino(w: Wine): String = when {
+    w.inVendita -> "Disponibile"
+    w.riservata -> "Riservata"
+    else -> "Non disponibile"
+}
+
 fun euro(v: Double): String = String.format(Locale.ITALY, "€ %.2f", v)
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -545,7 +552,7 @@ private fun WineCard(wine: Wine, isFavorite: Boolean, onToggleFavorite: () -> Un
                     .filter { it.isNotBlank() }.joinToString(" · ")
                 if (meta.isNotBlank()) Text(meta, color = InkSoft, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    if (wine.inVendita) "Disponibile" else "Non disponibile",
+                    statoVino(wine),
                     color = if (wine.inVendita) Accent else InkSoft,
                     fontWeight = FontWeight.Medium, fontSize = 13.sp,
                 )
@@ -617,7 +624,7 @@ private fun WineDetailScreen(
         if (sub.isNotBlank()) Text(sub, color = InkSoft, fontSize = 16.sp)
         Spacer(Modifier.height(12.dp))
         Text(
-            if (wine.inVendita) "Disponibile" else "Non disponibile",
+            statoVino(wine),
             color = if (wine.inVendita) Accent else InkSoft,
             fontWeight = FontWeight.SemiBold,
         )

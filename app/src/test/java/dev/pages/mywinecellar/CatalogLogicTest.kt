@@ -111,4 +111,18 @@ class CatalogLogicTest {
         assertEquals("", w[1].nota)
         assertEquals("", w[2].nota)
     }
+
+    @Test
+    fun leBottiglieRiservateRiduconoLaDisponibilita() {
+        val w = parseWines("""[{"id":"a","nome":"Uno","quantita":3,"disponibile_vendita":true}]""")[0]
+        assertTrue(w.inVendita)
+        assertEquals(1, w.copy(riservate = 2).liberi)
+        assertTrue(w.copy(riservate = 2).inVendita)
+        val tutteRiservate = w.copy(riservate = 3)
+        assertFalse(tutteRiservate.inVendita)
+        assertTrue(tutteRiservate.riservata)
+        assertEquals(0, w.copy(riservate = 9).liberi)          // mai sotto zero
+        assertEquals(0, filterWines(listOf(tutteRiservate), "", true).size)   // "solo disponibili" la esclude
+        assertFalse(parseWines("""[{"id":"b","nome":"Due","quantita":0,"disponibile_vendita":true}]""")[0].riservata)
+    }
 }

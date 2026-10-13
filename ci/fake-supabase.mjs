@@ -78,6 +78,9 @@ http.createServer(async (req, res) => {
   // ---- da qui serve una sessione valida
   if (!uid) return send(res, 401, { message: 'JWT expired' })
 
+  // bottiglie riservate per le serate: il vino w3 (2 bottiglie) è tutto riservato
+  if (p === '/rest/v1/rpc/reserved_quantities') return send(res, 200, [{ wine_id: 'w3', riservate: 2 }])
+
   if (p === '/rest/v1/wine_user_state') {
     const wine = eqVal(q(u, 'wine_id'))
     if (req.method === 'GET') {

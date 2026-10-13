@@ -91,7 +91,18 @@ data class Wine(
     val tannicita: Int? = null,
     val acidita: Int? = null,
     val mineralita: Int? = null,
+    /** Bottiglie riservate per serate non ancora trascorse (solo il totale, come sul sito). */
+    val riservate: Int = 0,
 ) {
+    /** Bottiglie libere = quantità meno le riservate. */
+    val liberi: Int get() = (quantita - riservate).coerceAtLeast(0)
+
+    /** In vendita = flag attivo e almeno una bottiglia LIBERA (stessa regola del sito). */
+    val inVendita: Boolean get() = disponibileVendita && liberi > 0
+
+    /** In vendita ma tutte le bottiglie sono già riservate per una serata. */
+    val riservata: Boolean get() = disponibileVendita && quantita > 0 && liberi == 0
+
     /** Le caratteristiche indicate, nell'ordine in cui le mostra il sito. */
     val profilo: List<Pair<String, Int>>
         get() = listOfNotNull(
@@ -105,8 +116,6 @@ data class Wine(
     /** Titolo mostrato: il nome, oppure la tipologia se il nome manca. */
     val titolo: String get() = nome.ifBlank { tipologia }.ifBlank { "Vino senza nome" }
 
-    /** Disponibile alla vendita = flag attivo e almeno una bottiglia. */
-    val inVendita: Boolean get() = disponibileVendita && quantita > 0
 
     val prezzoMostrato: Double? get() = valoreMercato ?: prezzo
 

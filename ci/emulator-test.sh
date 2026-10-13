@@ -308,6 +308,16 @@ if [ -f "$FAPK" ] && curl -s localhost:8787/_state > /dev/null 2>&1; then
   adb shell am start -W -n $FPKG/$ACT > /dev/null 2>&1
   expect "catalogo dal server simulato" "Disponibile|Non disponibile" 60
 
+  echo "-- bottiglie riservate per le serate (come sul sito)"
+  expect "il vino tutto riservato è mostrato come Riservata" "Riservata" 40
+  dump; N_ALL=$(python3 ci/ui.py count "$CUR" -)
+  tap "Solo disponibili" 15
+  sleep 2
+  dump; N_AV=$(python3 ci/ui.py count "$CUR" -)
+  echo "vini: tutti=$N_ALL, solo disponibili=$N_AV"
+  if [ "$N_ALL" = "3" ] && [ "$N_AV" = "1" ]; then ok "i vini riservati non compaiono tra i disponibili"; else bad "vini riservati: tutti=$N_ALL, disponibili=$N_AV (attesi 3 e 1)"; fi
+  tap "Tutti" 15
+
   echo "-- salvare la cantina con il codice"
   tap "Cantina" 15
   expect "schermata account da ospite" "Salva la tua cantina" 30

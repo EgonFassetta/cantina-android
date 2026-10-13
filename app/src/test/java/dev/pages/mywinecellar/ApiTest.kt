@@ -200,6 +200,23 @@ class ApiTest {
     }
 
     @Test
+    fun leggeLeBottiglieRiservate() = runTest {
+        api = newApi(logged)
+        server.enqueue(MockResponse().setBody("""[{"wine_id":"w1","riservate":2},{"wine_id":"w2","riservate":0}]"""))
+        assertEquals(mapOf("w1" to 2), api.fetchReserved())
+        val req = server.takeRequest()
+        assertEquals("POST", req.method)
+        assertTrue(req.path!!.endsWith("/rest/v1/rpc/reserved_quantities"))
+    }
+
+    @Test
+    fun seLaFunzioneDelleRiserveNonEsisteNessunaBottigliaRisultaRiservata() = runTest {
+        api = newApi(logged)
+        server.enqueue(MockResponse().setResponseCode(404).setBody("""{"message":"function not found"}"""))
+        assertEquals(emptyMap<String, Int>(), api.fetchReserved())
+    }
+
+    @Test
     fun accessoConEmailSalvaLaNuovaSessione() = runTest {
         api = newApi(logged)
         server.enqueue(

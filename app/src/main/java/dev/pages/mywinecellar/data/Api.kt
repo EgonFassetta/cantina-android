@@ -188,6 +188,26 @@ class SupabaseApi(
     private suspend fun userId(): String = currentSession().user?.id
         ?: throw ApiException("Sessione non disponibile.")
 
+    // ---------------------------------------------------------------- bottiglie riservate
+
+    /**
+     * Bottiglie riservate per le serate (funzione "reserved_quantities" del database, la stessa del sito).
+     * Se non esiste ancora, nessuna bottiglia risulta riservata.
+     */
+    suspend fun fetchReserved(): Map<String, Int> {
+        val r = rest("POST", "rpc/reserved_quantities", "{}")
+        if (r.code !in 200..299) return emptyMap()
+        val arr = runCatching { json.parseToJsonElement(r.body).jsonArray }.getOrNull() ?: return emptyMap()
+        val out = linkedMapOf<String, Int>()
+        arr.forEach { el ->
+            val o = el.jsonObject
+            val id = o["wine_id"]?.jsonPrimitive?.contentOrNull ?: return@forEach
+            val n = o["riservate"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull()?.toInt() ?: 0
+            if (n > 0) out[id] = n
+        }
+        return out
+    }
+
     // ---------------------------------------------------------------- preferiti
 
     suspend fun fetchFavorites(): Set<String> {

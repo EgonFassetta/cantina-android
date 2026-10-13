@@ -158,7 +158,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             val s = api.startSession()
             val favorites = api.fetchFavorites()
             val cart = api.fetchCart()
-            _state.update { it.copy(email = s.email, favorites = favorites, cart = cart) }
+            val reserved = runCatching { api.fetchReserved() }.getOrDefault(emptyMap())
+            _state.update { st ->
+                st.copy(
+                    email = s.email, favorites = favorites, cart = cart,
+                    wines = st.wines.map { w -> w.copy(riservate = reserved[w.id] ?: 0) },
+                )
+            }
         } catch (e: Exception) {
             say(friendlyError(e))
         }
@@ -207,12 +213,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     // ------------------------------------------------------------ carrello
 
     /** Si può aggiungere solo se il vino è in vendita e non si supera la quantità disponibile. */
-    fun canAdd(wine: Wine): Boolean = wine.disponibileVendita && (_state.value.cart[wine.id] ?: 0) < wine.quantita
+    fun canAdd(wine: Wine): Boolean = wine.inVendita && (_state.value.cart[wine.id] ?: 0) < wine.liberi
 
     fun addToCart(wine: Wine) {
         val current = _state.value.cart[wine.id] ?: 0
-        if (!wine.disponibileVendita) return
-        if (current >= wine.quantita) {
+        if (!wine.inVendita) return
+        if (current >= wine.liberi) {
             say("Hai già aggiunto tutte le bottiglie disponibili di questo vino.")
             return
         }
@@ -222,7 +228,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun changeQty(wine: Wine, delta: Int) {
         val current = _state.value.cart[wine.id] ?: 0
-        val next = (current + delta).coerceIn(0, wine.quantita.coerceAtLeast(1))
+        val next = (current + delta).coerceIn(0, wine.liberi.coerceAtLeast(1))
         if (next == current) return
         setQty(wine.id, next)
     }
