@@ -86,14 +86,7 @@ jobs:
       - name: Verifica che il database sia raggiungibile dal computer di GitHub
         run: |
           curl -s -o /dev/null -w "database wines: HTTP %{http_code}\n" "https://xqhoznbjyoityjtrolzb.supabase.co/rest/v1/wines?select=id&limit=1" -H "apikey: sb_publishable_f_jswE7Sf0BU2hHKkQYuEg_ZT7e1rGh" | tee ci-results/rete-runner.txt
-          curl -s "https://xqhoznbjyoityjtrolzb.supabase.co/rest/v1/wines?select=cantina,nome,quantita,disponibile_vendita,immagine_url&order=cantina.asc,nome.asc&limit=1000" -H "apikey: sb_publishable_f_jswE7Sf0BU2hHKkQYuEg_ZT7e1rGh" | python3 -c "
-import sys,json
-w=json.load(sys.stdin)
-avail=[x for x in w if str(x.get('disponibile_vendita')).lower() in ('true','t','1') and float(x.get('quantita') or 0)>0]
-img=[x for x in w if x.get('immagine_url')]
-print('catalogo:', len(w), 'vini | disponibili:', len(avail), '| con foto:', len(img))
-if avail: print('primo disponibile:', avail[0].get('cantina'), '-', avail[0].get('nome'), '| foto:', bool(avail[0].get('immagine_url')))
-" | tee -a ci-results/rete-runner.txt
+          curl -s "https://xqhoznbjyoityjtrolzb.supabase.co/rest/v1/wines?select=cantina,nome,quantita,disponibile_vendita,immagine_url&order=cantina.asc,nome.asc&limit=1000" -H "apikey: sb_publishable_f_jswE7Sf0BU2hHKkQYuEg_ZT7e1rGh" | python3 ci/catalog-stats.py | tee -a ci-results/rete-runner.txt
 
       - name: Abilita KVM (emulatore veloce)
         run: |
