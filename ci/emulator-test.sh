@@ -18,7 +18,10 @@ abort_if_dead() {
   if ! emulator_alive; then
     echo "ERRORE GRAVE: l'emulatore non risponde più, interrompo questa prova"
     touch ci-results/emulator-dead.txt
+    echo "EMULATOR_DEAD=1" >> "$GITHUB_ENV"
     echo 1 > ci-results/emulator-exit.txt
+    echo "--- ultime righe del registro del telefono prima del blocco:"
+    tail -40 ci-results/logcat-live.txt 2>/dev/null | cut -c1-220
     exit 99
   fi
 }
@@ -85,6 +88,9 @@ fake_check() { # descrizione, condizione in Python sulla variabile s (lo stato)
 }
 
 adb shell settings put global hide_error_dialogs 1 > /dev/null 2>&1
+# Registro del telefono scritto in continuo: se l'emulatore si blocca resta comunque tutto fino a quel momento.
+adb logcat -c
+(adb logcat -v time > ci-results/logcat-live.txt 2>&1 &)
 adb install -r "$APK" 2>&1 | tee ci-results/install.log
 adb logcat -c
 adb shell am start -W -n $PKG/$ACT 2>&1 | tee ci-results/start.log
