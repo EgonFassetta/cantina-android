@@ -25,10 +25,11 @@ I risultati sono nel ramo `ci-results` (`summary.md` e screenshot).
 Il flusso `Release` (da avviare a mano) crea il file `.aab` firmato per Google Play. La chiave di firma è nei *Secrets*
 dell'archivio (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`) e **non** è mai nel codice.
 
-## Prova completa dell'account (spenta)
+## Prova completa dell'account sul server vero (spenta)
 La prova "salva la cantina → esci → accedi → elimina l'account" è nel file `ci/emulator-test.sh` e parte solo se esiste
-il file `ci/account-test.enabled`. Va attivata dopo aver pubblicato la funzione `delete-account` su Supabase, così
-l'account di prova viene sempre cancellato a fine test.
+il file `ci/account-test.enabled`. Il 13 ottobre 2026 è stata eseguita con successo sul server vero (account creato,
+rientro con la stessa email, eliminazione con `delete-account`). Resta spenta per non creare utenti di prova a ogni modifica;
+per rifarla basta ricreare quel file. La stessa sequenza viene provata a ogni modifica con il server simulato.
 
 ## Versioni
 `versionCode` e `versionName` sono nel file `app/build.gradle.kts`: il flusso `Release` imposta da solo un `versionCode`
