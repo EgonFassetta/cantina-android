@@ -110,6 +110,7 @@ jobs:
           target: google_apis
           profile: pixel_6
           disable-animations: true
+          cores: 4
           ram-size: 4096M
           heap-size: 576M
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 8.8.8.8,8.8.4.4
@@ -117,13 +118,18 @@ jobs:
 
       - name: Riavvia il server simulato (solo se il telefono virtuale si era bloccato)
         id: restart
-        if: steps.emulator.outcome == 'failure' && env.EMULATOR_DEAD == '1'
+        if: steps.emulator.outcome == 'failure'
         run: |
-          pkill -f fake-supabase.mjs || true
-          rm -f ci-results/emulator-dead.txt
-          nohup node ci/fake-supabase.mjs > ci-results/fake-server-2.log 2>&1 &
-          sleep 2
-          echo "retry=true" >> "$GITHUB_OUTPUT"
+          if [ -f ci-results/emulator-dead.txt ]; then
+            echo "Il telefono virtuale si era bloccato: ripeto la prova."
+            pkill -f fake-supabase.mjs || true
+            rm -f ci-results/emulator-dead.txt
+            nohup node ci/fake-supabase.mjs > ci-results/fake-server-2.log 2>&1 &
+            sleep 2
+            echo "retry=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "La prova è fallita per un motivo diverso dal blocco del telefono: non la ripeto."
+          fi
 
       - name: Prova l'app sull'emulatore (seconda prova)
         id: emulator2
@@ -135,6 +141,7 @@ jobs:
           target: google_apis
           profile: pixel_6
           disable-animations: true
+          cores: 4
           ram-size: 4096M
           heap-size: 576M
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 8.8.8.8,8.8.4.4

@@ -13,7 +13,14 @@ ok()  { echo "OK: $1"; }
 bad() { echo "ERRORE: $1"; FAIL=1; }
 
 # L'emulatore a volte si blocca (succede di rado): se non risponde più ci si ferma subito e il flusso riprova da capo.
-emulator_alive() { timeout 15 adb shell echo ok 2>/dev/null | grep -q ok; }
+# Un emulatore lento non è un emulatore bloccato: si riprova più volte, con pause, prima di arrendersi.
+emulator_alive() {
+  for i in 1 2 3 4; do
+    timeout 20 adb shell echo ok 2>/dev/null | grep -q ok && return 0
+    sleep 10
+  done
+  return 1
+}
 abort_if_dead() {
   if ! emulator_alive; then
     echo "ERRORE GRAVE: l'emulatore non risponde più, interrompo questa prova"
@@ -88,6 +95,9 @@ fake_check() { # descrizione, condizione in Python sulla variabile s (lo stato)
 }
 
 adb shell settings put global hide_error_dialogs 1 > /dev/null 2>&1
+# La tastiera di Google appesantisce molto l'emulatore di prova: la spengo (i testi si inseriscono comunque con "adb input").
+for ime in $(adb shell ime list -s 2>/dev/null | tr -d '\r'); do adb shell ime disable "$ime" > /dev/null 2>&1; done
+adb shell settings put secure show_ime_with_hard_keyboard 0 > /dev/null 2>&1
 # Registro del telefono scritto in continuo: se l'emulatore si blocca resta comunque tutto fino a quel momento.
 adb logcat -c
 (adb logcat -v time > ci-results/logcat-live.txt 2>&1 &)
