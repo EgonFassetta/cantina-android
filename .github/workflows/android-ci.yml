@@ -15,7 +15,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v6
 
@@ -112,8 +112,31 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 8.8.8.8,8.8.4.4
           script: bash ci/emulator-test.sh
 
+      - name: Riavvia il server simulato (solo se il telefono virtuale si era bloccato)
+        id: restart
+        if: steps.emulator.outcome == 'failure' && hashFiles('ci-results/emulator-dead.txt') != ''
+        run: |
+          pkill -f fake-supabase.mjs || true
+          rm -f ci-results/emulator-dead.txt
+          nohup node ci/fake-supabase.mjs > ci-results/fake-server-2.log 2>&1 &
+          sleep 2
+          echo "retry=true" >> "$GITHUB_OUTPUT"
+
+      - name: Prova l'app sull'emulatore (seconda prova)
+        id: emulator2
+        if: steps.restart.outputs.retry == 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 8.8.8.8,8.8.4.4
+          script: bash ci/emulator-test.sh
+
       - name: Pubblica l'APK di prova (da installare sul telefono)
-        if: steps.emulator.outcome == 'success'
+        if: steps.emulator.outcome == 'success' || steps.emulator2.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -125,7 +148,7 @@ jobs:
         if: always()
         env:
           BUILD_OUTCOME: ${{ steps.build.outcome }}
-          EMU_OUTCOME: ${{ steps.emulator.outcome }}
+          EMU_OUTCOME: ${{ steps.emulator2.outcome == 'success' && 'success (alla seconda prova)' || steps.emulator.outcome }}
           RELEASE_OUTCOME: ${{ steps.release_check.outcome }}
           SIGNING_OUTCOME: ${{ steps.signing_check.outcome }}
           SERVER_TESTS_OUTCOME: ${{ steps.server_tests.outcome }}

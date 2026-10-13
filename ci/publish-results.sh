@@ -73,6 +73,7 @@ git config --global user.email "ci@users.noreply.github.com"
 rm -rf /tmp/res && mkdir /tmp/res && cp -r "$OUT"/. /tmp/res/
 git checkout --orphan ci-results-tmp
 git rm -rf . > /dev/null 2>&1
+git clean -ffdxq
 cp -r /tmp/res/. .
 git add -A
 git commit -m "Risultati CI run $GITHUB_RUN_NUMBER" > /dev/null

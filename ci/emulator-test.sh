@@ -12,11 +12,23 @@ FAIL=0
 ok()  { echo "OK: $1"; }
 bad() { echo "ERRORE: $1"; FAIL=1; }
 
+# L'emulatore a volte si blocca (succede di rado): se non risponde più ci si ferma subito e il flusso riprova da capo.
+emulator_alive() { timeout 15 adb shell echo ok 2>/dev/null | grep -q ok; }
+abort_if_dead() {
+  if ! emulator_alive; then
+    echo "ERRORE GRAVE: l'emulatore non risponde più, interrompo questa prova"
+    touch ci-results/emulator-dead.txt
+    echo 1 > ci-results/emulator-exit.txt
+    exit 99
+  fi
+}
+
 dump() {
   for i in 1 2 3; do
     adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1 && adb pull /sdcard/ui.xml "$CUR" > /dev/null 2>&1 && return 0
     sleep 2
   done
+  abort_if_dead
   return 1
 }
 
@@ -48,7 +60,7 @@ tap() {
   return 1
 }
 
-shot() { adb exec-out screencap -p > "ci-results/$1.png"; }
+shot() { adb exec-out screencap -p > "ci-results/$1.png"; [ -s "ci-results/$1.png" ] || abort_if_dead; }
 
 # Chiude la tastiera solo se è davvero aperta (altrimenti il tasto indietro cambierebbe schermata).
 hide_keyboard() {
