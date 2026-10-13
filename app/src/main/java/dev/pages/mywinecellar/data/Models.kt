@@ -53,6 +53,7 @@ data class WineDto(
     @Serializable(with = FlexString::class) val regione: String? = null,
     @SerialName("sito_produttore") @Serializable(with = FlexString::class) val sitoProduttore: String? = null,
     @SerialName("disponibile_vendita") @Serializable(with = FlexString::class) val disponibileVendita: String? = null,
+    @Serializable(with = FlexString::class) val nota: String? = null,
     @SerialName("giudizio_complessivo") @Serializable(with = FlexString::class) val giudizioComplessivo: String? = null,
     @Serializable(with = FlexString::class) val morbidezza: String? = null,
     @Serializable(with = FlexString::class) val struttura: String? = null,
@@ -81,6 +82,8 @@ data class Wine(
     val regione: String,
     val sitoProduttore: String,
     val disponibileVendita: Boolean,
+    /** Note sul vino (pubbliche, come sul sito). */
+    val nota: String = "",
     /** Giudizio complessivo e profilo del vino, tutti su una scala da 0 a 100 (null = non indicato). */
     val giudizio: Int? = null,
     val morbidezza: Int? = null,
@@ -155,6 +158,7 @@ fun WineDto.toWine(): Wine? {
         regione = regione.clean(),
         sitoProduttore = sitoProduttore.clean(),
         disponibileVendita = disponibileVendita.toBoolLoose(),
+        nota = nota.clean(),
         giudizio = giudizioComplessivo.toScore(),
         morbidezza = morbidezza.toScore(),
         struttura = struttura.toScore(),

@@ -643,6 +643,7 @@ private fun WineDetailScreen(
         DetailRow("Regione", wine.regione)
         DetailRow("Paese", wine.paese)
         DetailRow("Prezzo", wine.prezzoMostrato?.let { euro(it) } ?: "")
+        DetailRow("Note", wine.nota)
         if (wine.giudizio != null || wine.profilo.isNotEmpty()) {
             Spacer(Modifier.height(14.dp))
             Text("Profilo del vino", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Accent)

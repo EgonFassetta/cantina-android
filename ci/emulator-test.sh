@@ -268,6 +268,30 @@ adb shell am force-stop $PKG
 adb shell am start -W -n $PKG/$ACT > /dev/null 2>&1
 expect "catalogo di nuovo normale" "Disponibile|Non disponibile" 90
 
+echo "== 6e) Schermo largo (tablet) e telefono in orizzontale"
+adb shell wm size 1600x2560 > /dev/null 2>&1
+adb shell wm density 320 > /dev/null 2>&1
+sleep 3
+adb shell am force-stop $PKG
+adb shell am start -W -n $PKG/$ACT > /dev/null 2>&1
+expect "catalogo su schermo largo" "Disponibile|Non disponibile" 90
+shot 19-tablet-catalogo
+tap "Non disponibile" 20 || tap "Disponibile" 20
+expect "scheda su schermo largo" "Indietro" 30
+shot 20-tablet-scheda
+adb shell wm size reset > /dev/null 2>&1
+adb shell wm density reset > /dev/null 2>&1
+adb shell settings put system accelerometer_rotation 0 > /dev/null 2>&1
+adb shell settings put system user_rotation 1 > /dev/null 2>&1
+sleep 3
+adb shell am force-stop $PKG
+adb shell am start -W -n $PKG/$ACT > /dev/null 2>&1
+expect "catalogo in orizzontale" "Disponibile|Non disponibile" 90
+shot 21-orizzontale
+adb shell settings put system user_rotation 0 > /dev/null 2>&1
+adb shell settings put system accelerometer_rotation 1 > /dev/null 2>&1
+sleep 2
+
 FAPK=app/build/outputs/apk/fake/app-fake.apk
 FPKG=mywine.cellar.fake
 if [ -f "$FAPK" ] && curl -s localhost:8787/_state > /dev/null 2>&1; then

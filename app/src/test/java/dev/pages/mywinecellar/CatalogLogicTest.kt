@@ -103,4 +103,12 @@ class CatalogLogicTest {
         val w = parseWines(rich)
         assertEquals(listOf("Bianco", "Rosso"), distinctValues(w) { it.coloreVino })   // "rosso" e "Rosso" sono la stessa voce
     }
+
+    @Test
+    fun leNoteVengonoLetteESePossibileSonoVuoteAltrimenti() {
+        val w = parseWines("""[{"id":"a","nome":"Uno","nota":"  Da bere entro il 2030  "},{"id":"b","nome":"Due","nota":null},{"id":"c","nome":"Tre"}]""")
+        assertEquals("Da bere entro il 2030", w[0].nota)
+        assertEquals("", w[1].nota)
+        assertEquals("", w[2].nota)
+    }
 }
