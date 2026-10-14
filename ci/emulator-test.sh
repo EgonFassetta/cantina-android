@@ -72,9 +72,9 @@ tap() {
 
 shot() { adb exec-out screencap -p > "ci-results/$1.png"; [ -s "ci-results/$1.png" ] || abort_if_dead; }
 
-# Chiude la tastiera solo se è davvero aperta (altrimenti il tasto indietro cambierebbe schermata).
+# La tastiera di sistema è spenta (vedi sopra): non c'è nulla da chiudere. Premere "indietro" qui cambierebbe schermata,
+# perché l'app torna al catalogo dalle altre schede. Resta solo una breve pausa per lasciare finire il disegno dello schermo.
 hide_keyboard() {
-  if adb shell dumpsys input_method 2>/dev/null | grep -q "mInputShown=true"; then adb shell input keyevent KEYCODE_BACK; fi
   sleep 2
 }
 
