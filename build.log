@@ -1,0 +1,213 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.13/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preCantinaDebugBuild UP-TO-DATE
+> Task :app:generateCantinaDebugBuildConfig
+> Task :app:generateCantinaDebugResValues FROM-CACHE
+> Task :app:checkCantinaDebugAarMetadata
+> Task :app:mapCantinaDebugSourceSetPaths
+> Task :app:generateCantinaDebugResources
+> Task :app:packageCantinaDebugResources
+> Task :app:mergeCantinaDebugResources
+> Task :app:parseCantinaDebugLocalResources FROM-CACHE
+> Task :app:createCantinaDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksCantinaDebug FROM-CACHE
+> Task :app:processCantinaDebugMainManifest FROM-CACHE
+> Task :app:processCantinaDebugManifest
+> Task :app:javaPreCompileCantinaDebug FROM-CACHE
+> Task :app:preCantinaDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileCantinaDebugUnitTest FROM-CACHE
+> Task :app:preAdminDebugBuild UP-TO-DATE
+> Task :app:generateAdminDebugBuildConfig
+> Task :app:checkAdminDebugAarMetadata
+> Task :app:generateAdminDebugResValues FROM-CACHE
+> Task :app:mapAdminDebugSourceSetPaths
+> Task :app:generateAdminDebugResources
+> Task :app:packageAdminDebugResources
+> Task :app:createAdminDebugCompatibleScreenManifests
+> Task :app:processCantinaDebugManifestForPackage
+> Task :app:mergeAdminDebugResources
+> Task :app:parseAdminDebugLocalResources
+> Task :app:extractDeepLinksAdminDebug FROM-CACHE
+> Task :app:processAdminDebugMainManifest
+> Task :app:processAdminDebugManifest
+> Task :app:javaPreCompileAdminDebug FROM-CACHE
+> Task :app:preAdminDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileAdminDebugUnitTest FROM-CACHE
+> Task :app:mergeCantinaDebugNativeDebugMetadata NO-SOURCE
+> Task :app:mergeCantinaDebugShaders
+> Task :app:compileCantinaDebugShaders NO-SOURCE
+> Task :app:processAdminDebugManifestForPackage
+> Task :app:generateCantinaDebugAssets UP-TO-DATE
+> Task :app:mergeCantinaDebugAssets
+> Task :app:compressCantinaDebugAssets FROM-CACHE
+> Task :app:desugarCantinaDebugFileDependencies FROM-CACHE
+> Task :app:processCantinaDebugResources
+> Task :app:checkCantinaDebugDuplicateClasses
+> Task :app:processAdminDebugResources
+> Task :app:mergeExtDexCantinaDebug FROM-CACHE
+> Task :app:mergeLibDexCantinaDebug FROM-CACHE
+> Task :app:mergeCantinaDebugJniLibFolders
+> Task :app:mergeCantinaDebugNativeLibs
+> Task :app:validateSigningCantinaDebug
+> Task :app:writeCantinaDebugAppMetadata
+> Task :app:writeCantinaDebugSigningConfigVersions
+> Task :app:preCantinaFakeBuild UP-TO-DATE
+> Task :app:mergeCantinaFakeNativeDebugMetadata NO-SOURCE
+
+> Task :app:stripCantinaDebugDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so. Run with --info option to learn more.
+
+> Task :app:generateCantinaFakeBuildConfig
+> Task :app:generateCantinaFakeResValues FROM-CACHE
+> Task :app:checkCantinaFakeAarMetadata
+> Task :app:mapCantinaFakeSourceSetPaths
+> Task :app:generateCantinaFakeResources
+> Task :app:packageCantinaFakeResources
+> Task :app:parseCantinaFakeLocalResources FROM-CACHE
+> Task :app:createCantinaFakeCompatibleScreenManifests
+> Task :app:extractDeepLinksCantinaFake FROM-CACHE
+> Task :app:processCantinaFakeMainManifest FROM-CACHE
+> Task :app:processCantinaFakeManifest
+> Task :app:processCantinaFakeManifestForPackage
+> Task :app:javaPreCompileCantinaFake FROM-CACHE
+> Task :app:mergeCantinaFakeShaders
+> Task :app:compileCantinaFakeShaders NO-SOURCE
+> Task :app:generateCantinaFakeAssets UP-TO-DATE
+> Task :app:mergeCantinaFakeAssets
+> Task :app:compressCantinaFakeAssets FROM-CACHE
+> Task :app:desugarCantinaFakeFileDependencies FROM-CACHE
+> Task :app:checkCantinaFakeDuplicateClasses
+> Task :app:mergeExtDexCantinaFake FROM-CACHE
+> Task :app:mergeCantinaFakeResources
+> Task :app:mergeLibDexCantinaFake FROM-CACHE
+> Task :app:mergeCantinaFakeJniLibFolders
+> Task :app:mergeCantinaFakeNativeLibs
+
+> Task :app:stripCantinaFakeDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so. Run with --info option to learn more.
+
+> Task :app:validateSigningCantinaFake
+> Task :app:writeCantinaFakeAppMetadata
+> Task :app:writeCantinaFakeSigningConfigVersions
+> Task :app:preAdminFakeBuild UP-TO-DATE
+> Task :app:mergeAdminFakeNativeDebugMetadata NO-SOURCE
+> Task :app:generateAdminFakeBuildConfig
+> Task :app:checkAdminFakeAarMetadata
+> Task :app:generateAdminFakeResValues FROM-CACHE
+> Task :app:mapAdminFakeSourceSetPaths
+> Task :app:generateAdminFakeResources
+> Task :app:processCantinaFakeResources
+> Task :app:mergeAdminFakeResources
+> Task :app:packageAdminFakeResources
+> Task :app:parseAdminFakeLocalResources
+> Task :app:createAdminFakeCompatibleScreenManifests
+> Task :app:extractDeepLinksAdminFake FROM-CACHE
+> Task :app:processAdminFakeMainManifest
+> Task :app:processAdminFakeManifest
+> Task :app:processAdminFakeManifestForPackage
+> Task :app:processAdminFakeResources
+> Task :app:compileCantinaDebugKotlin
+> Task :app:compileAdminDebugKotlin
+w: file:///home/runner/work/cantina-android/cantina-android/app/src/main/java/dev/pages/mywinecellar/data/Models.kt:31:36 This declaration needs opt-in. Its usage should be marked with '@kotlinx.serialization.ExperimentalSerializationApi' or '@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)'
+
+> Task :app:compileCantinaFakeKotlin
+w: file:///home/runner/work/cantina-android/cantina-android/app/src/main/java/dev/pages/mywinecellar/data/Models.kt:31:36 This declaration needs opt-in. Its usage should be marked with '@kotlinx.serialization.ExperimentalSerializationApi' or '@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)'
+
+> Task :app:compileAdminFakeKotlin
+w: file:///home/runner/work/cantina-android/cantina-android/app/src/main/java/dev/pages/mywinecellar/data/Models.kt:31:36 This declaration needs opt-in. Its usage should be marked with '@kotlinx.serialization.ExperimentalSerializationApi' or '@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)'
+
+> Task :app:compileCantinaDebugKotlin
+w: file:///home/runner/work/cantina-android/cantina-android/app/src/main/java/dev/pages/mywinecellar/data/Models.kt:31:36 This declaration needs opt-in. Its usage should be marked with '@kotlinx.serialization.ExperimentalSerializationApi' or '@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)'
+
+> Task :app:compileCantinaFakeJavaWithJavac
+> Task :app:compileCantinaDebugJavaWithJavac
+> Task :app:processCantinaDebugJavaRes
+> Task :app:bundleCantinaDebugClassesToCompileJar
+> Task :app:bundleCantinaDebugClassesToRuntimeJar
+> Task :app:compileAdminDebugJavaWithJavac
+> Task :app:processAdminDebugJavaRes
+> Task :app:bundleAdminDebugClassesToCompileJar
+> Task :app:bundleAdminDebugClassesToRuntimeJar
+> Task :app:compileCantinaDebugUnitTestKotlin
+> Task :app:dexBuilderCantinaDebug
+> Task :app:compileCantinaDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processCantinaDebugUnitTestJavaRes
+> Task :app:testCantinaDebugUnitTest
+> Task :app:mergeCantinaDebugGlobalSynthetics FROM-CACHE
+> Task :app:mergeCantinaDebugJavaResource
+> Task :app:mergeProjectDexCantinaDebug
+> Task :app:compileAdminDebugUnitTestKotlin
+> Task :app:dexBuilderCantinaFake
+> Task :app:compileAdminDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processAdminDebugUnitTestJavaRes
+> Task :app:testAdminDebugUnitTest
+> Task :app:mergeCantinaFakeGlobalSynthetics FROM-CACHE
+> Task :app:processCantinaFakeJavaRes
+> Task :app:javaPreCompileAdminFake FROM-CACHE
+> Task :app:mergeProjectDexCantinaFake
+> Task :app:compileAdminFakeJavaWithJavac
+> Task :app:mergeAdminFakeShaders
+> Task :app:compileAdminFakeShaders NO-SOURCE
+> Task :app:generateAdminFakeAssets UP-TO-DATE
+> Task :app:mergeAdminFakeAssets
+> Task :app:compressAdminFakeAssets FROM-CACHE
+> Task :app:desugarAdminFakeFileDependencies FROM-CACHE
+> Task :app:mergeCantinaFakeJavaResource
+> Task :app:dexBuilderAdminFake
+> Task :app:mergeAdminFakeGlobalSynthetics FROM-CACHE
+> Task :app:processAdminFakeJavaRes
+> Task :app:checkAdminFakeDuplicateClasses
+> Task :app:packageCantinaDebug
+> Task :app:createCantinaDebugApkListingFileRedirect
+> Task :app:assembleCantinaDebug
+> Task :app:mergeExtDexAdminFake FROM-CACHE
+> Task :app:mergeLibDexAdminFake FROM-CACHE
+> Task :app:packageCantinaFake
+> Task :app:mergeAdminFakeJavaResource
+> Task :app:createCantinaFakeApkListingFileRedirect
+> Task :app:assembleCantinaFake
+> Task :app:mergeAdminFakeJniLibFolders
+> Task :app:validateSigningAdminFake
+> Task :app:writeAdminFakeAppMetadata
+> Task :app:writeAdminFakeSigningConfigVersions
+> Task :app:mergeAdminDebugNativeDebugMetadata NO-SOURCE
+> Task :app:mergeAdminDebugShaders
+> Task :app:compileAdminDebugShaders NO-SOURCE
+> Task :app:generateAdminDebugAssets UP-TO-DATE
+> Task :app:mergeAdminFakeNativeLibs
+> Task :app:mergeAdminDebugAssets
+> Task :app:compressAdminDebugAssets FROM-CACHE
+
+> Task :app:stripAdminFakeDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so. Run with --info option to learn more.
+
+> Task :app:desugarAdminDebugFileDependencies FROM-CACHE
+> Task :app:mergeProjectDexAdminFake
+> Task :app:dexBuilderAdminDebug
+> Task :app:mergeAdminDebugGlobalSynthetics FROM-CACHE
+> Task :app:mergeAdminDebugJniLibFolders
+> Task :app:checkAdminDebugDuplicateClasses
+> Task :app:mergeAdminDebugNativeLibs
+> Task :app:mergeExtDexAdminDebug FROM-CACHE
+> Task :app:mergeLibDexAdminDebug FROM-CACHE
+> Task :app:mergeAdminDebugJavaResource
+> Task :app:validateSigningAdminDebug
+> Task :app:writeAdminDebugAppMetadata
+
+> Task :app:stripAdminDebugDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so. Run with --info option to learn more.
+
+> Task :app:writeAdminDebugSigningConfigVersions
+> Task :app:packageAdminFake
+> Task :app:createAdminFakeApkListingFileRedirect
+> Task :app:assembleAdminFake
+> Task :app:mergeProjectDexAdminDebug
+> Task :app:packageAdminDebug
+> Task :app:createAdminDebugApkListingFileRedirect
+> Task :app:assembleAdminDebug
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1792004729711.json
+
+BUILD SUCCESSFUL in 1m 23s
+160 actionable tasks: 122 executed, 38 from cache

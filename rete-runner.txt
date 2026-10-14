@@ -1,0 +1,3 @@
+database wines: HTTP 200
+catalogo: 190 vini | disponibili: 1 | con foto: 0
+primo disponibile: Begali - None | foto: False

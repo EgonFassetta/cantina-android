@@ -1,0 +1,91 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.13/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preCantinaReleaseBuild UP-TO-DATE
+> Task :app:generateCantinaReleaseResValues FROM-CACHE
+> Task :app:mapCantinaReleaseSourceSetPaths
+> Task :app:generateCantinaReleaseResources
+> Task :app:createCantinaReleaseCompatibleScreenManifests
+> Task :app:extractDeepLinksCantinaRelease FROM-CACHE
+> Task :app:processCantinaReleaseMainManifest FROM-CACHE
+> Task :app:processCantinaReleaseManifest
+> Task :app:processApplicationManifestCantinaReleaseForBundle
+> Task :app:checkCantinaReleaseAarMetadata
+> Task :app:mergeCantinaReleaseResources
+> Task :app:packageCantinaReleaseResources
+> Task :app:parseCantinaReleaseLocalResources FROM-CACHE
+> Task :app:extractCantinaReleaseVersionControlInfo
+> Task :app:mergeCantinaReleaseShaders
+> Task :app:compileCantinaReleaseShaders NO-SOURCE
+> Task :app:generateCantinaReleaseAssets UP-TO-DATE
+> Task :app:mergeCantinaReleaseAssets
+> Task :app:desugarCantinaReleaseFileDependencies FROM-CACHE
+> Task :app:buildKotlinToolingMetadata
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateCantinaReleaseBuildConfig
+> Task :app:javaPreCompileCantinaRelease FROM-CACHE
+> Task :app:processCantinaReleaseManifestForPackage
+> Task :app:checkCantinaReleaseDuplicateClasses
+> Task :app:mergeCantinaReleaseStartupProfile
+> Task :app:mergeExtDexCantinaRelease FROM-CACHE
+> Task :app:mergeCantinaReleaseJniLibFolders
+> Task :app:processCantinaReleaseResources
+> Task :app:mergeCantinaReleaseNativeLibs
+> Task :app:bundleCantinaReleaseResources
+> Task :app:writeCantinaReleaseAppMetadata
+
+> Task :app:stripCantinaReleaseDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so. Run with --info option to learn more.
+
+> Task :app:mergeCantinaReleaseArtProfile
+> Task :app:collectCantinaReleaseDependencies
+> Task :app:configureCantinaReleaseDependencies
+> Task :app:extractCantinaReleaseNativeSymbolTables FROM-CACHE
+> Task :app:extractProguardFiles
+> Task :app:parseCantinaReleaseIntegrityConfig FROM-CACHE
+> Task :app:mergeCantinaReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:compressCantinaReleaseAssets FROM-CACHE
+> Task :app:sdkCantinaReleaseDependencyData
+> Task :app:writeCantinaReleaseSigningConfigVersions
+> Task :app:optimizeCantinaReleaseResources
+
+> Task :app:compileCantinaReleaseKotlin
+w: file:///home/runner/work/cantina-android/cantina-android/app/src/main/java/dev/pages/mywinecellar/data/Models.kt:31:36 This declaration needs opt-in. Its usage should be marked with '@kotlinx.serialization.ExperimentalSerializationApi' or '@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)'
+
+> Task :app:compileCantinaReleaseJavaWithJavac
+> Task :app:dexBuilderCantinaRelease
+> Task :app:mergeCantinaReleaseGlobalSynthetics FROM-CACHE
+> Task :app:processCantinaReleaseJavaRes
+> Task :app:generateCantinaReleaseLintVitalReportModel
+> Task :app:mergeCantinaReleaseJavaResource
+> Task :app:mergeDexCantinaRelease
+> Task :app:buildCantinaReleasePreBundle
+> Task :app:compileCantinaReleaseArtProfile
+> Task :app:lintVitalAnalyzeCantinaRelease
+> Task :app:lintVitalReportCantinaRelease
+> Task :app:lintVitalCantinaRelease
+> Task :app:packageCantinaReleaseBundle
+> Task :app:packageCantinaRelease
+> Task :app:createCantinaReleaseApkListingFileRedirect
+> Task :app:assembleCantinaRelease
+> Task :app:signCantinaReleaseBundle
+> Task :app:produceCantinaReleaseBundleIdeListingFile
+> Task :app:createCantinaReleaseBundleListingFileRedirect
+> Task :app:bundleCantinaRelease
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/release_check-1792004811147.json
+
+BUILD SUCCESSFUL in 56s
+58 actionable tasks: 47 executed, 11 from cache
+app/build/outputs/apk/cantina/release/:
+total 7732
+drwxr-xr-x 3 runner runner    4096 Oct 14 19:07 .
+drwxr-xr-x 5 runner runner    4096 Oct 14 19:07 ..
+-rw-r--r-- 1 runner runner 7897510 Oct 14 19:07 app-cantina-release-unsigned.apk
+drwxr-xr-x 4 runner runner    4096 Oct 14 19:07 baselineProfiles
+-rw-r--r-- 1 runner runner     761 Oct 14 19:07 output-metadata.json
+
+app/build/outputs/bundle/cantinaRelease/:
+total 7408
+drwxr-xr-x 2 runner runner    4096 Oct 14 19:07 .
+drwxr-xr-x 3 runner runner    4096 Oct 14 19:07 ..
+-rw-r--r-- 1 runner runner 7575014 Oct 14 19:07 app-cantina-release.aab

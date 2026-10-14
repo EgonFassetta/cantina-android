@@ -1,0 +1,15 @@
+File: app/build/outputs/apk/cantina/release/app-cantina-release.apk
+package: name='mywine.cellar' versionCode='1' versionName='1.0.0' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'
+targetSdkVersion:'36'
+uses-permission: name='android.permission.INTERNET'
+uses-permission: name='mywine.cellar.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'
+application-label:'La Cantina di Egon'
+native-code: 'arm64-v8a' 'armeabi-v7a' 'x86' 'x86_64'
+--- librerie native nel pacchetto:
+      1 lib/arm64-v8a
+      1 lib/armeabi-v7a
+      1 lib/x86
+      1 lib/x86_64
+--- dimensioni:
+7905702 app/build/outputs/apk/cantina/release/app-cantina-release.apk
+7584172 app/build/outputs/bundle/cantinaRelease/app-cantina-release.aab
