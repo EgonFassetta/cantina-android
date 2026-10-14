@@ -43,15 +43,15 @@ jobs:
         run: |
           set -o pipefail
           chmod +x gradlew
-          ./gradlew --no-daemon --console=plain testDebugUnitTest assembleDebug assembleFake 2>&1 | tee ci-results/build.log
+          ./gradlew --no-daemon --console=plain testCantinaDebugUnitTest testAdminDebugUnitTest assembleCantinaDebug assembleCantinaFake assembleAdminFake assembleAdminDebug 2>&1 | tee ci-results/build.log
 
       - name: Verifica la compilazione del file per il Play Store (senza firma)
         id: release_check
         continue-on-error: true
         run: |
           set -o pipefail
-          ./gradlew --no-daemon --console=plain bundleRelease assembleRelease 2>&1 | tee ci-results/release-build.log
-          ls -la app/build/outputs/bundle/release/ app/build/outputs/apk/release/ 2>&1 | tee -a ci-results/release-build.log
+          ./gradlew --no-daemon --console=plain bundleCantinaRelease assembleCantinaRelease 2>&1 | tee ci-results/release-build.log
+          ls -la app/build/outputs/bundle/cantinaRelease/ app/build/outputs/apk/cantina/release/ 2>&1 | tee -a ci-results/release-build.log
 
       - name: Autoverifica della firma con una chiave temporanea (stessa procedura del flusso Release)
         id: signing_check
@@ -62,18 +62,18 @@ jobs:
             keytool -genkeypair -keystore "$RUNNER_TEMP/prova.jks" -storetype PKCS12 -alias upload -keyalg RSA -keysize 2048 -validity 30 \
               -storepass provaprova123 -keypass provaprova123 -dname "CN=Prova firma" 2>&1 | tail -1
             export KEYSTORE_PATH="$RUNNER_TEMP/prova.jks" KEYSTORE_PASSWORD=provaprova123 KEY_ALIAS=upload KEY_PASSWORD=provaprova123
-            ./gradlew --no-daemon --console=plain bundleRelease assembleRelease 2>&1 | tail -5
+            ./gradlew --no-daemon --console=plain bundleCantinaRelease assembleCantinaRelease 2>&1 | tail -5
             APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
-            "$APKSIGNER" verify --print-certs app/build/outputs/apk/release/app-release.apk | head -4
-            jarsigner -verify app/build/outputs/bundle/release/app-release.aab | head -3
+            "$APKSIGNER" verify --print-certs app/build/outputs/apk/cantina/release/app-cantina-release.apk | head -4
+            jarsigner -verify app/build/outputs/bundle/cantinaRelease/app-cantina-release.aab | head -3
           } 2>&1 | tee ci-results/signing-selftest.log
 
       - name: Controlli sul pacchetto per il Play Store (versione Android, permessi, librerie)
         continue-on-error: true
         run: |
           AAPT2=$(ls -d "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)
-          APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
-          AAB=$(ls app/build/outputs/bundle/release/*.aab | head -1)
+          APK=$(ls app/build/outputs/apk/cantina/release/*.apk | head -1)
+          AAB=$(ls app/build/outputs/bundle/cantinaRelease/*.aab | head -1)
           {
             echo "File: $APK"
             "$AAPT2" dump badging "$APK" | grep -E "^package:|^sdkVersion|^targetSdkVersion|^uses-permission|^application-label:|^application-debuggable|^native-code" 
@@ -152,9 +152,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk cantina-prova.apk
+          cp app/build/outputs/apk/cantina/debug/app-cantina-debug.apk cantina-prova.apk
+          cp app/build/outputs/apk/admin/debug/app-admin-debug.apk cantina-admin-prova.apk
           gh release view prova >/dev/null 2>&1 || gh release create prova --prerelease --title "Versione di prova" --notes "APK di prova, aggiornato a ogni modifica. Da installare sul telefono per provare l'app."
-          gh release upload prova cantina-prova.apk --clobber
+          gh release upload prova cantina-prova.apk cantina-admin-prova.apk --clobber
 
       - name: Pubblica i risultati
         if: always()

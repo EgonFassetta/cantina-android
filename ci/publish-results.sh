@@ -19,7 +19,7 @@ mkdir -p "$OUT"
   python3 - <<'PY'
 import glob, xml.etree.ElementTree as ET
 t = f = e = s = 0
-for p in glob.glob('app/build/test-results/testDebugUnitTest/*.xml'):
+for p in glob.glob('app/build/test-results/test*DebugUnitTest/*.xml'):
     r = ET.parse(p).getroot()
     t += int(r.get('tests', 0)); f += int(r.get('failures', 0)); e += int(r.get('errors', 0)); s += int(r.get('skipped', 0))
     for tc in r.findall('testcase'):

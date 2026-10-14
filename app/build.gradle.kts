@@ -36,6 +36,20 @@ android {
         }
     }
 
+    // Due edizioni dello stesso progetto: "cantina" (clienti, pubblicata sul Play Store) e "admin" (solo per l'amministratore,
+    // distribuita a parte). Il codice riservato all'amministratore esiste soltanto nell'edizione "admin".
+    flavorDimensions += "edition"
+    productFlavors {
+        create("cantina") {
+            dimension = "edition"
+        }
+        create("admin") {
+            dimension = "edition"
+            applicationIdSuffix = ".admin"
+            versionNameSuffix = "-admin"
+        }
+    }
+
     buildTypes {
         // Variante solo per le prove automatiche: parla con un server simulato sul computer di prova
         // (10.0.2.2 = il computer che ospita l'emulatore). Non viene mai pubblicata.
@@ -67,6 +81,7 @@ android {
 
 dependencies {
     implementation("androidx.core:core-ktx:1.16.0")
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
     implementation("androidx.activity:activity-compose:1.10.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0")

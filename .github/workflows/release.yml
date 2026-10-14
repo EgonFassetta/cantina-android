@@ -46,15 +46,15 @@ jobs:
           VERSION_CODE: ${{ github.run_number }}
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon --console=plain testDebugUnitTest bundleRelease assembleRelease
+          ./gradlew --no-daemon --console=plain testCantinaDebugUnitTest bundleCantinaRelease assembleCantinaRelease
 
       - name: Pubblica la Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="play-store-${GITHUB_RUN_NUMBER}"
-          cp app/build/outputs/bundle/release/app-release.aab "mywine-cellar-${GITHUB_RUN_NUMBER}.aab"
-          cp app/build/outputs/apk/release/app-release.apk "mywine-cellar-${GITHUB_RUN_NUMBER}.apk"
+          cp app/build/outputs/bundle/cantinaRelease/app-cantina-release.aab "mywine-cellar-${GITHUB_RUN_NUMBER}.aab"
+          cp app/build/outputs/apk/cantina/release/app-cantina-release.apk "mywine-cellar-${GITHUB_RUN_NUMBER}.apk"
           gh release create "$TAG" --title "App per il Play Store (n. ${GITHUB_RUN_NUMBER})" \
             --notes "File firmati. Il .aab si carica su Google Play Console; il .apk si può installare sul telefono per provare." \
             "mywine-cellar-${GITHUB_RUN_NUMBER}.aab" "mywine-cellar-${GITHUB_RUN_NUMBER}.apk"

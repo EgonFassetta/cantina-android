@@ -3,7 +3,7 @@
 # persistenza dopo la chiusura, carrello, account, assistenza) senza inviare richieste vere.
 mkdir -p ci-results
 exec > >(tee ci-results/emulator-test.log) 2>&1
-APK=app/build/outputs/apk/debug/app-debug.apk
+APK=app/build/outputs/apk/cantina/debug/app-cantina-debug.apk
 PKG=mywine.cellar
 ACT=dev.pages.mywinecellar.MainActivity
 CUR=ci-results/ui-current.xml
@@ -308,7 +308,7 @@ adb shell settings put system user_rotation 0 > /dev/null 2>&1
 adb shell settings put system accelerometer_rotation 1 > /dev/null 2>&1
 sleep 2
 
-FAPK=app/build/outputs/apk/fake/app-fake.apk
+FAPK=app/build/outputs/apk/cantina/fake/app-cantina-fake.apk
 FPKG=mywine.cellar.fake
 if [ -f "$FAPK" ] && curl -s localhost:8787/_state > /dev/null 2>&1; then
   echo "== 6d) Prove con server simulato: accesso con codice, richieste, eliminazione"
@@ -419,6 +419,61 @@ if [ -f "$FAPK" ] && curl -s localhost:8787/_state > /dev/null 2>&1; then
   adb shell am force-stop $FPKG
 else
   echo "SALTATO: variante di prova o server simulato non disponibili"
+fi
+
+AAPK=app/build/outputs/apk/admin/fake/app-admin-fake.apk
+APKG=mywine.cellar.admin.fake
+if [ -f "$AAPK" ] && curl -s localhost:8787/_state > /dev/null 2>&1; then
+  echo "== 6f) Edizione Admin: accesso e aggiunta di un vino da etichetta (server simulato)"
+  adb install -r "$AAPK" 2>&1 | tail -1
+  adb shell pm clear $APKG > /dev/null 2>&1
+  adb shell am start -W -n $APKG/$ACT > /dev/null 2>&1
+  expect "catalogo (edizione Admin)" "Disponibile|Non disponibile|Riservata" 90
+  tap "Admin" 15
+  expect "schermata di accesso Admin" "Area Admin" 30
+  type_into "Password" "sbagliata"
+  tap "Entra" 15
+  expect "password sbagliata rifiutata" "Password errata." 30
+  type_into "Password" "admin-pass"
+  tap "Entra" 15
+  expect "accesso amministratore riuscito" "^Collegato come" 30
+  shot 22-admin-home
+
+  tap "📷 Aggiungi vino da etichetta" 15
+  expect "passo delle foto" "Fronte (obbligatoria)" 30
+  tap "Usa foto di prova" 15
+  expect "anteprima del fronte" "Anteprima: Fronte (obbligatoria)" 30
+  tap "Leggi l'etichetta" 15
+  expect "scheda di controllo con la bottiglia già presente" "Hai già questa bottiglia (stessa annata)" 60
+  shot 23-admin-controllo
+  type_into "Scaffale * (es. 3.4 oppure Box1)" "5.6"
+  tap "Crea nuova riga" 15
+  expect "avviso di doppione" "^Esiste già" 30
+  tap "Crea comunque" 15
+  expect "vino creato" "^Creata" 40
+  shot 24-admin-creato
+  fake_check "il server ha salvato il nuovo vino" "s['wineCount']==4 and any(x['modo']=='nuova' and x['forza'] for x in s['labelSaves'])"
+  fake_check "la foto dell'etichetta è stata caricata" "len(s['uploads'])==1"
+
+  echo "-- aggiungere bottiglie a una riga esistente"
+  tap "Aggiungi un'altra" 15
+  expect "di nuovo il passo delle foto" "Fronte (obbligatoria)" 30
+  tap "Usa foto di prova" 15
+  expect "anteprima del fronte" "Anteprima: Fronte (obbligatoria)" 30
+  tap "Leggi l'etichetta" 15
+  expect "scheda di controllo" "Hai già questa bottiglia (stessa annata)" 60
+  tap "Aggiungi qui" 15
+  expect "bottiglie aggiunte" "^Aggiunte" 40
+  fake_check "il server ha aggiunto le bottiglie alla riga esistente" "any(x['modo']=='aggiungi' and x['wineId']=='w1' for x in s['labelSaves'])"
+  tap "Chiudi" 15
+  tap "Catalogo" 15
+  expect "il nuovo vino compare nel catalogo" "Nuovo Vino" 60
+  tap "Admin" 15
+  tap "Esci dall'area Admin" 15
+  expect "uscito dall'area Admin" "Accesso riservato all'amministratore. Inserisci la password." 30
+  adb shell am force-stop $APKG
+else
+  echo "SALTATO: edizione Admin di prova o server simulato non disponibili"
 fi
 
 echo "== 7) Apertura senza connessione (mostra l'ultimo catalogo salvato)"

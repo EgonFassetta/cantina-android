@@ -13,6 +13,9 @@ const refreshes = new Map() // refresh_token -> userId
 const state = new Map()     // `${uid}|${wine}` -> { preferito }
 const cart = new Map()      // `${uid}|${wine}` -> quantity
 const requests = []
+const uploads = []
+const labelSaves = []
+const admins = new Set()   // id utenti con accesso amministratore
 const codes = new Map()     // `${email}|${purpose}` -> code
 let lastCode = null
 
@@ -52,11 +55,18 @@ http.createServer(async (req, res) => {
   console.log(req.method, p + u.search)
 
   // ---- strumenti per le prove
-  if (p === '/_state') return send(res, 200, { mode, lastCode, requests, users: [...users.values()], cartSize: cart.size, favorites: [...state.values()].filter((s) => s.preferito).length })
+  if (p === '/_state') return send(res, 200, { mode, lastCode, requests, uploads, labelSaves, wineCount: WINES.length, users: [...users.values()], cartSize: cart.size, favorites: [...state.values()].filter((s) => s.preferito).length })
   if (p === '/_mode') { mode = body.mode || 'code'; return send(res, 200, { ok: true, mode }) }
 
   // ---- catalogo
   if (p === '/rest/v1/wines') {
+    if (req.method === 'PATCH') {
+      const id = eqVal(q(u, 'id'))
+      const w = WINES.find((x) => x.id === id)
+      if (!w) return send(res, 200, [])
+      Object.assign(w, body)
+      return send(res, 200, [{ id }])
+    }
     const offset = parseInt(q(u, 'offset') || '0', 10)
     return send(res, 200, offset === 0 ? WINES : [])
   }
@@ -111,7 +121,43 @@ http.createServer(async (req, res) => {
     }
   }
 
+  // ---- foto delle etichette (contenitore pubblico "etichette")
+  if (p.startsWith('/storage/v1/object/etichette/')) { uploads.push(p.slice('/storage/v1/object/etichette/'.length)); return send(res, 200, { Key: p }) }
+
   // ---- funzioni
+  if (p === '/functions/v1/admin-login') {
+    if (body.password !== 'admin-pass') return send(res, 401, { ok: false, error: 'Password errata.' })
+    const adminUser = { id: 'admin-user', email: 'admin@prova.test', is_anonymous: false }
+    users.set(adminUser.id, adminUser); admins.add(adminUser.id)
+    const s = newSession(adminUser)
+    return send(res, 200, { ok: true, role: 'super_admin', email: adminUser.email, session: { access_token: s.access_token, refresh_token: s.refresh_token } })
+  }
+  if (p === '/functions/v1/label-reader') {
+    if (!admins.has(uid)) return send(res, 403, { ok: false, error: 'Accesso negato: solo l\u2019amministratore.' })
+    if (body.action === 'read') {
+      return send(res, 200, {
+        ok: true, leggibilita: 'alta', note: '',
+        campi: { cantina: 'Cantina Prova', nome: 'Nuovo Vino', tipo: 'Rosso Superiore', annata: '2022', grado: '13.5', formato: '', regione: 'Veneto', paese: 'Italia', colore_vino: 'Rosso', effervescenza: 'Fermo', dolcezza: 'Secco', sito_produttore: '' },
+        simili: [{ id: 'w1', cantina: 'Cantina Prova', nome: 'Rosso Disponibile', annata: '2022', quantita: 3, posizione: '3.4', corrispondenza: 'stessa-annata' }],
+      })
+    }
+    if (body.action === 'save') {
+      const c = body.campi || {}
+      labelSaves.push({ modo: body.modo, quantita: body.quantita, posizione: body.posizione, campi: c, wineId: body.wineId || null, forza: !!body.forza })
+      if (body.modo === 'aggiungi') {
+        const w = WINES.find((x) => x.id === body.wineId)
+        if (!w) return send(res, 404, { ok: false, error: 'Vino non trovato.' })
+        w.quantita = (Number(w.quantita) || 0) + body.quantita
+        return send(res, 200, { ok: true, id: w.id, aggiunta: body.quantita, quantita: w.quantita })
+      }
+      if (!body.forza && c.cantina === 'Cantina Prova' && String(c.annata) === '2022') {
+        return send(res, 200, { ok: false, duplicato: true, message: 'Esiste già «Cantina Prova · Rosso Disponibile 2022». Puoi aggiungere le bottiglie a quella riga oppure crearne comunque una nuova.' })
+      }
+      const id = 'wl-' + (labelSaves.length)
+      WINES.push({ id, cantina: c.cantina, nome: c.nome, tipo: c.tipo, annata: c.annata, quantita: body.quantita, disponibile_vendita: false, colore_vino: c.colore_vino, effervescenza: c.effervescenza, dolcezza: c.dolcezza, regione: c.regione, paese: c.paese })
+      return send(res, 200, { ok: true, id, quantita: body.quantita })
+    }
+  }
   if (p === '/functions/v1/submit-request') {
     requests.push(body)
     if (JSON.stringify(body).includes('LIMITE')) return send(res, 429, { ok: false, error: 'Hai inviato troppe richieste ravvicinate. Riprova tra un po\u2019.' })

@@ -90,7 +90,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import dev.pages.mywinecellar.admin.AdminFeature
 import dev.pages.mywinecellar.data.Wine
+import androidx.compose.material.icons.filled.Settings
 import java.util.Locale
 
 private const val PRIVACY_URL = "https://mywinecellar.pages.dev/privacy.html"
@@ -213,6 +215,14 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                     icon = { Icon(Icons.Filled.AccountCircle, contentDescription = null) },
                     label = { Text("Cantina") },
                 )
+                if (AdminFeature.enabled) {
+                    NavigationBarItem(
+                        selected = tab == 4, colors = colors,
+                        onClick = { tab = 4; selectedId = null },
+                        icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
+                        label = { Text("Admin") },
+                    )
+                }
             }
         },
         snackbarHost = { SnackbarHost(snackbar) },
@@ -237,6 +247,10 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                             .filter { it.cantina.isNotBlank() && it.cantina == selected.cantina && it.id != selected.id }
                             .take(8),
                         onOpenOther = { selectedId = it.id },
+                    )
+                    tab == 4 && AdminFeature.enabled -> AdminFeature.Screen(
+                        onSessionChanged = vm::reloadSession,
+                        onCatalogChanged = vm::refresh,
                     )
                     tab == 3 -> AccountScreen(
                         state = state,

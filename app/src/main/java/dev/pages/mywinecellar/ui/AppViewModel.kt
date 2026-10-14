@@ -5,7 +5,7 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.pages.mywinecellar.data.ApiException
-import dev.pages.mywinecellar.data.SharedPrefsSessionStore
+import dev.pages.mywinecellar.data.Backend
 import dev.pages.mywinecellar.data.SortMode
 import dev.pages.mywinecellar.data.SupabaseApi
 import dev.pages.mywinecellar.data.WineCache
@@ -96,7 +96,7 @@ fun friendlyError(e: Throwable): String = when (e) {
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val prefs = app.getSharedPreferences("app", Context.MODE_PRIVATE)
-    private val api = SupabaseApi(SharedPrefsSessionStore(app))
+    private val api = Backend.api(app)
     private val cache = WineCache(File(app.cacheDir, "wines.json"))
 
     private val _state = MutableStateFlow(AppState())
@@ -167,6 +167,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
         } catch (e: Exception) {
             say(friendlyError(e))
+        }
+    }
+
+    /** La sessione è cambiata (per esempio accesso o uscita dall'area Admin): rilegge account, preferiti e carrello. */
+    fun reloadSession() {
+        viewModelScope.launch {
+            _state.update { it.copy(email = null, favorites = emptySet(), cart = emptyMap()) }
+            refreshUserData()
         }
     }
 

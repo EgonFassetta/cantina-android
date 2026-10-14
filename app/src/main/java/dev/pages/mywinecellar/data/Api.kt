@@ -28,18 +28,18 @@ import okhttp3.RequestBody.Companion.toRequestBody
 /** Errore "leggibile" da mostrare all'utente. */
 class ApiException(message: String, val status: Int = 0) : IOException(message)
 
-private data class Resp(val code: Int, val body: String)
+internal data class Resp(val code: Int, val body: String)
 
 /** Comunicazione con Supabase: le stesse tabelle e funzioni del sito web. */
 class SupabaseApi(
     private val store: SessionStore,
-    private val baseUrl: String = BuildConfig.SUPABASE_URL,
-    private val apiKey: String = BuildConfig.SUPABASE_KEY,
+    internal val baseUrl: String = BuildConfig.SUPABASE_URL,
+    internal val apiKey: String = BuildConfig.SUPABASE_KEY,
     private val http: OkHttpClient = OkHttpClient(),
 ) {
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true; coerceInputValues = true }
-    private val jsonType = "application/json; charset=utf-8".toMediaType()
-    private val mutex = Mutex()
+    internal val json = Json { ignoreUnknownKeys = true; isLenient = true; coerceInputValues = true }
+    internal val jsonType = "application/json; charset=utf-8".toMediaType()
+    internal val mutex = Mutex()
 
     @Volatile
     var session: AuthSession? = store.load()
@@ -122,13 +122,13 @@ class SupabaseApi(
         return saveSession(json.decodeFromString<AuthSession>(r.body))
     }
 
-    private fun saveSession(s: AuthSession): AuthSession {
+    internal fun saveSession(s: AuthSession): AuthSession {
         session = s
         store.save(s)
         return s
     }
 
-    private fun clearSession() {
+    internal fun clearSession() {
         session = null
         store.save(null)
     }
@@ -145,7 +145,7 @@ class SupabaseApi(
         }
 
     /** Invia una richiesta autenticata; se il token è scaduto lo rinnova e riprova una volta. */
-    private suspend fun send(build: (String) -> Request): Resp {
+    internal suspend fun send(build: (String) -> Request): Resp {
         var retried = false
         while (true) {
             val token = currentSession().accessToken
@@ -161,7 +161,7 @@ class SupabaseApi(
         }
     }
 
-    private suspend fun rest(method: String, path: String, bodyJson: String? = null, prefer: String? = null): Resp =
+    internal suspend fun rest(method: String, path: String, bodyJson: String? = null, prefer: String? = null): Resp =
         send { token ->
             val b = Request.Builder()
                 .url("$baseUrl/rest/v1/$path")
@@ -179,11 +179,11 @@ class SupabaseApi(
             b.build()
         }
 
-    private fun requireOk(r: Resp, fallback: String) {
+    internal fun requireOk(r: Resp, fallback: String) {
         if (r.code !in 200..299) throw ApiException(errorMessage(r.body, fallback), r.code)
     }
 
-    private fun enc(v: String): String = URLEncoder.encode(v, "UTF-8")
+    internal fun enc(v: String): String = URLEncoder.encode(v, "UTF-8")
 
     private suspend fun userId(): String = currentSession().user?.id
         ?: throw ApiException("Sessione non disponibile.")
@@ -290,7 +290,7 @@ class SupabaseApi(
 
     // ---------------------------------------------------------------- funzioni del server
 
-    private suspend fun callFunction(name: String, body: JsonObject, fallback: String): JsonObject {
+    internal suspend fun callFunction(name: String, body: JsonObject, fallback: String): JsonObject {
         val r = send { token ->
             Request.Builder()
                 .url("$baseUrl/functions/v1/$name")
@@ -467,7 +467,7 @@ class SupabaseApi(
 
     // ---------------------------------------------------------------- utilità
 
-    private fun errorMessage(body: String, fallback: String): String {
+    internal fun errorMessage(body: String, fallback: String): String {
         val obj = runCatching { json.parseToJsonElement(body).jsonObject }.getOrNull() ?: return fallback
         for (k in listOf("error_description", "msg", "message", "error")) {
             val v = obj[k]?.jsonPrimitive?.contentOrNull
