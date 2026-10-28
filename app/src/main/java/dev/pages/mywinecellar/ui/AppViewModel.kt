@@ -101,7 +101,7 @@ fun friendlyError(e: Throwable): String = when (e) {
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val prefs = app.getSharedPreferences("app", Context.MODE_PRIVATE)
     private val api = Backend.api(app)
-    private fun cacheFor(slug: String) = WineCache(File(app.cacheDir, "wines-$slug.json"))
+    private fun cacheFor(slug: String) = WineCache(File(getApplication<Application>().cacheDir, "wines-$slug.json"))
 
     private val _state = MutableStateFlow(AppState(cellar = prefs.getString("cellar", DEFAULT_TENANT) ?: DEFAULT_TENANT))
     val state: StateFlow<AppState> = _state.asStateFlow()
