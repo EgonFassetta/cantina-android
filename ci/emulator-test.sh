@@ -61,10 +61,12 @@ expect() { if wait_for "$2" "${3:-30}"; then ok "$1"; return 0; else bad "$1 (no
 
 # Tocca l'elemento con quel testo (o descrizione), aspettando che compaia.
 tap() {
-  local end=$((SECONDS + ${2:-25}))
+  local end=$((SECONDS + ${2:-25})) n=0
   while [ $SECONDS -lt $end ]; do
     if dump && xy=$(python3 ci/ui.py tap "$CUR" "$1"); then adb shell input tap $xy; sleep 2; return 0; fi
-    sleep 2
+    # Se l'elemento non è sullo schermo, scorro verso il basso e riprovo (es. campo «Scaffale» sotto la piega).
+    n=$((n+1)); if [ $((n % 2)) -eq 0 ]; then adb shell input swipe 540 1500 540 700 300; fi
+    sleep 1
   done
   bad "elemento non trovato: $1"
   return 1
