@@ -1,5 +1,7 @@
 package dev.pages.mywinecellar.ui
 
+import androidx.compose.material.icons.filled.List
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -215,6 +217,12 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                     icon = { Icon(Icons.Filled.AccountCircle, contentDescription = null) },
                     label = { Text("Cantina") },
                 )
+                NavigationBarItem(
+                    selected = tab == 4, colors = colors,
+                    onClick = { tab = 4; selectedId = null },
+                    icon = { Icon(Icons.Filled.List, contentDescription = null) },
+                    label = { Text("Mappa") },
+                )
                 if (AdminFeature.enabled) {
                     NavigationBarItem(
                         selected = tab == 4, colors = colors,
@@ -278,6 +286,10 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                         state = state,
                         onOpen = { selectedId = it.id },
                         onToggleFavorite = { vm.toggleFavorite(it.id) },
+                    )
+                    tab == 4 -> ShelfMapScreen(
+                        wines = state.wines,
+                        onOpen = { selectedId = it.id },
                     )
                     else -> CartScreen(
                         state = state,

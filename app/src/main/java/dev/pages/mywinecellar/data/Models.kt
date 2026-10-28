@@ -60,6 +60,7 @@ data class WineDto(
     @Serializable(with = FlexString::class) val tannicita: String? = null,
     @Serializable(with = FlexString::class) val acidita: String? = null,
     @Serializable(with = FlexString::class) val mineralita: String? = null,
+    @Serializable(with = FlexString::class) val posizione: String? = null,
 )
 
 /** Vino pronto per essere mostrato nell'app. */
@@ -93,6 +94,8 @@ data class Wine(
     val mineralita: Int? = null,
     /** Bottiglie riservate per serate non ancora trascorse (solo il totale, come sul sito). */
     val riservate: Int = 0,
+    /** Posizione sullo scaffale (es. "3.4" oppure "Box2"), come sul sito. */
+    val posizione: String = "",
 ) {
     /** Bottiglie libere = quantità meno le riservate. */
     val liberi: Int get() = (quantita - riservate).coerceAtLeast(0)
@@ -174,6 +177,7 @@ fun WineDto.toWine(): Wine? {
         tannicita = tannicita.toScore(),
         acidita = acidita.toScore(),
         mineralita = mineralita.toScore(),
+        posizione = posizione.clean(),
     )
 }
 
