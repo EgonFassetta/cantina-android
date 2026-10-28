@@ -12,6 +12,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -355,6 +356,77 @@ class SupabaseApi(
             },
             "Invio non riuscito.",
         )
+    }
+
+    /** «Cosa ci cucino?» partendo da una bottiglia: piatti adatti (funzione food-pairing-ai). */
+    suspend fun foodForWine(wineId: String, ingredients: String, people: Int, time: String): FoodResult {
+        val o = callFunction(
+            "food-pairing-ai",
+            buildJsonObject {
+                put("wineId", wineId)
+                put("ingredients", ingredients)
+                put("people", people)
+                put("time", time)
+            },
+            "Non riesco a contattare il servizio dei piatti. Riprova tra poco.",
+        )
+        return parseFood(o)
+    }
+
+    /** Ingredienti da una foto del frigo (data URL JPEG). */
+    suspend fun ingredientsFromPhoto(dataUrl: String): List<String> {
+        val o = callFunction(
+            "food-pairing-ai",
+            buildJsonObject {
+                put("action", "fridge")
+                put("images", kotlinx.serialization.json.buildJsonArray { add(JsonPrimitive(dataUrl)) })
+            },
+            "Non sono riuscito a leggere la foto. Puoi scrivere gli ingredienti a mano.",
+        )
+        return o.strList("ingredienti")
+    }
+
+    /** Vini adatti a un piatto, tra quelli in stock (funzione wine-pairing-ai). */
+    suspend fun winesForDish(dish: String, wines: List<Wine>): List<WineMatch> {
+        val arr = kotlinx.serialization.json.buildJsonArray {
+            wines.forEach { w ->
+                add(buildJsonObject {
+                    put("wineId", w.id)
+                    put("cantina", w.cantina)
+                    put("nome", w.nome)
+                    put("tipo", w.tipologia)
+                    put("colore", w.coloreVino)
+                    put("effervescenza", w.caratteristica)
+                    put("regione", w.regione)
+                    put("paese", w.paese)
+                    put("annata", w.annata)
+                    put("quantita", w.quantita)
+                })
+            }
+        }
+        val o = callFunction(
+            "wine-pairing-ai",
+            buildJsonObject { put("dish", dish); put("wines", arr) },
+            "Non riesco a contattare il servizio di abbinamento. Riprova tra poco.",
+        )
+        return parseWineMatches(o)
+    }
+
+    /** Serata: un vino per portata, quantità calcolate dal server (funzione evening-planner-ai). */
+    suspend fun planEvening(guests: Int, pour: String, courses: List<String>, menu: String, tenant: String): EveningPlan {
+        val arr = kotlinx.serialization.json.buildJsonArray { courses.forEach { add(JsonPrimitive(it)) } }
+        val o = callFunction(
+            "evening-planner-ai",
+            buildJsonObject {
+                put("guests", guests)
+                put("pour", pour)
+                put("courses", arr)
+                put("menu", menu)
+                put("tenant", tenant)
+            },
+            "Non sono riuscito a preparare la serata. Riprova tra poco.",
+        )
+        return parseEvening(o)
     }
 
     // ---------------------------------------------------------------- account con email

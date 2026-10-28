@@ -237,6 +237,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
             Box(Modifier.weight(1f).widthIn(max = 640.dp).fillMaxWidth()) {
                 when {
                     selected != null -> WineDetailScreen(
+                        vm = vm,
                         wine = selected,
                         qtyInCart = state.cart[selected.id] ?: 0,
                         canAdd = vm.canAdd(selected),
@@ -266,6 +267,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                     state.loading -> LoadingView()
                     state.error != null -> ErrorView(state.error ?: "", onRetry = vm::load)
                     tab == 0 -> CatalogScreen(
+                        vm = vm,
                         state = state,
                         onQuery = vm::setQuery,
                         onOnlyAvailable = vm::setOnlyAvailable,
@@ -414,6 +416,7 @@ fun ErrorView(message: String, onRetry: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CatalogScreen(
+    vm: AppViewModel,
     state: AppState,
     onQuery: (String) -> Unit,
     onOnlyAvailable: (Boolean) -> Unit,
@@ -424,7 +427,18 @@ private fun CatalogScreen(
 ) {
     val visible = state.visible
     val focus = LocalFocusManager.current
+    var showDish by remember { mutableStateOf(false) }
+    var showEvening by remember { mutableStateOf(false) }
+    if (showDish) DishPairingDialog(vm, state.wines, onOpen) { showDish = false }
+    if (showEvening) EveningDialog(vm) { showEvening = false }
     Column(Modifier.fillMaxSize()) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            TextButton(onClick = { showDish = true }) { Text("Abbina a un piatto") }
+            TextButton(onClick = { showEvening = true }) { Text("Pianifica una serata") }
+        }
         OutlinedTextField(
             value = state.query,
             onValueChange = onQuery,
@@ -601,6 +615,7 @@ fun WineThumb(wine: Wine, sizeDp: Int) {
 
 @Composable
 private fun WineDetailScreen(
+    vm: AppViewModel,
     wine: Wine,
     qtyInCart: Int,
     canAdd: Boolean,
@@ -665,6 +680,7 @@ private fun WineDetailScreen(
         DetailRow("Paese", wine.paese)
         DetailRow("Prezzo", wine.prezzoMostrato?.let { euro(it) } ?: "")
         DetailRow("Note", wine.nota)
+        CucinoSection(wine, vm)
         if (wine.giudizio != null || wine.profilo.isNotEmpty()) {
             Spacer(Modifier.height(14.dp))
             Text("Profilo del vino", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Accent)
