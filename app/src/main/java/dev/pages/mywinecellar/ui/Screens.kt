@@ -1,5 +1,7 @@
 package dev.pages.mywinecellar.ui
 
+import dev.pages.mywinecellar.data.WineAttachment
+
 
 
 import androidx.activity.compose.BackHandler
@@ -237,8 +239,10 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
             if (state.offline) OfflineBanner(onRetry = vm::load)
             state.email?.let { EmailBanner(it) }
             Box(Modifier.weight(1f).widthIn(max = 640.dp).fillMaxWidth()) {
+                selected?.let { LaunchedEffect(it.id) { vm.loadAttachments(it.id) } }
                 when {
                     selected != null -> WineDetailScreen(
+                        attachmentsFor = { id -> state.attachments[id].orEmpty() },
                         wine = selected,
                         qtyInCart = state.cart[selected.id] ?: 0,
                         canAdd = vm.canAdd(selected),
@@ -634,6 +638,7 @@ fun WineThumb(wine: Wine, sizeDp: Int) {
 @Composable
 private fun WineDetailScreen(
     wine: Wine,
+    attachmentsFor: (String) -> List<WineAttachment>,
     qtyInCart: Int,
     canAdd: Boolean,
     onAdd: () -> Unit,
@@ -644,6 +649,7 @@ private fun WineDetailScreen(
 ) {
     var zoom by remember(wine.id) { mutableStateOf(false) }
     val scroll = remember(wine.id) { ScrollState(0) }
+    val uriHandler = LocalUriHandler.current
     if (zoom && wine.immagineUrl != null) {
         Dialog(onDismissRequest = { zoom = false }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
             Box(
@@ -697,6 +703,21 @@ private fun WineDetailScreen(
         DetailRow("Paese", wine.paese)
         DetailRow("Prezzo", wine.prezzoMostrato?.let { euro(it) } ?: "")
         DetailRow("Note", wine.nota)
+        val attachments = attachmentsFor(wine.id)
+        if (attachments.isNotEmpty()) {
+            Spacer(Modifier.height(14.dp))
+            Text("Allegati", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Accent)
+            attachments.forEach { a ->
+                Row(
+                    Modifier.fillMaxWidth().clickable { uriHandler.openUri(a.url) }.padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(a.categoria.ifBlank { "Allegato" }, color = Accent, fontSize = 14.sp)
+                    Spacer(Modifier.width(10.dp))
+                    Text(a.filename, modifier = Modifier.weight(1f), fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
         if (wine.giudizio != null || wine.profilo.isNotEmpty()) {
             Spacer(Modifier.height(14.dp))
             Text("Profilo del vino", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Accent)

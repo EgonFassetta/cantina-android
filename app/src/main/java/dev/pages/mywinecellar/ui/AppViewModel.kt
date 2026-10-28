@@ -62,6 +62,8 @@ data class AppState(
     val cellars: List<Cellar> = emptyList(),
     /** Cantina mostrata al cliente. */
     val cellar: String = DEFAULT_TENANT,
+    /** Allegati già letti, per id del vino. */
+    val attachments: Map<String, List<WineAttachment>> = emptyMap(),
 ) {
     val activeFilters: Int get() = listOf(colore, caratteristica, tipoVino, regione).count { it != null }
     val colori: List<String> get() = distinctValues(wines) { it.coloreVino }
@@ -113,6 +115,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             loadCellars()
             load()
+        }
+    }
+
+    /** Legge gli allegati di un vino quando si apre la scheda. */
+    fun loadAttachments(wineId: String) {
+        if (_state.value.attachments.containsKey(wineId)) return
+        viewModelScope.launch {
+            val list = runCatching { api.fetchAttachments(wineId) }.getOrDefault(emptyList())
+            _state.update { it.copy(attachments = it.attachments + (wineId to list)) }
         }
     }
 
