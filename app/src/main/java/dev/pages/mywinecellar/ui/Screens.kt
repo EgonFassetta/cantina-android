@@ -287,7 +287,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                         onOpen = { selectedId = it.id },
                         onToggleFavorite = { vm.toggleFavorite(it.id) },
                     )
-                    tab == 4 -> ShelfMapScreen(
+                    tab == 4 -> MapTabScreen(
                         wines = state.wines,
                         onOpen = { selectedId = it.id },
                     )
