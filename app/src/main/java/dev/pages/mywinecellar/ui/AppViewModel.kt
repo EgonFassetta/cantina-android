@@ -58,6 +58,10 @@ data class AppState(
     /** True mentre l'elenco si aggiorna (tirando giù la lista). */
     val refreshing: Boolean = false,
     val codeStep: CodeStep? = null,
+    /** Cantine pubblicate nell'app (elenco da app_cellars). */
+    val cellars: List<Cellar> = emptyList(),
+    /** Cantina mostrata al cliente. */
+    val cellar: String = DEFAULT_TENANT,
 ) {
     val activeFilters: Int get() = listOf(colore, caratteristica, tipoVino, regione).count { it != null }
     val colori: List<String> get() = distinctValues(wines) { it.coloreVino }
@@ -97,16 +101,42 @@ fun friendlyError(e: Throwable): String = when (e) {
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val prefs = app.getSharedPreferences("app", Context.MODE_PRIVATE)
     private val api = Backend.api(app)
-    private val cache = WineCache(File(app.cacheDir, "wines.json"))
+    private fun cacheFor(slug: String) = WineCache(File(app.cacheDir, "wines-$slug.json"))
 
-    private val _state = MutableStateFlow(AppState())
+    private val _state = MutableStateFlow(AppState(cellar = prefs.getString("cellar", DEFAULT_TENANT) ?: DEFAULT_TENANT))
     val state: StateFlow<AppState> = _state.asStateFlow()
 
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 8)
     val messages: SharedFlow<String> = _messages.asSharedFlow()
 
     init {
-        load()
+        viewModelScope.launch {
+            loadCellars()
+            load()
+        }
+    }
+
+    /** Elenco delle cantine: se non si legge, resta la cantina corrente (come prima). */
+    private suspend fun loadCellars() {
+        try {
+            val list = api.fetchCellars()
+            if (list.isNotEmpty()) {
+                val cur = _state.value.cellar
+                val cur2 = if (list.any { it.slug == cur }) cur else list.first().slug
+                _state.update { it.copy(cellars = list, cellar = cur2) }
+            }
+        } catch (_: Exception) { /* nessun selettore: si usa la cantina salvata */ }
+    }
+
+    /** Cambia cantina: svuota il carrello (il server non accetta carrelli misti) e ricarica il catalogo. */
+    fun selectCellar(slug: String) {
+        if (slug == _state.value.cellar) return
+        prefs.edit().putString("cellar", slug).apply()
+        viewModelScope.launch {
+            runCatching { api.clearCart() }
+            _state.update { it.copy(cellar = slug, cart = emptyMap(), wines = emptyList()) }
+            load()
+        }
     }
 
     private fun say(text: String) {
@@ -117,12 +147,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _state.update { it.copy(loading = true, error = null) }
             try {
-                val json = api.fetchWinesJson()
+                val cur = _state.value.cellar
+                val json = api.fetchWinesJson(cur)
                 val wines = parseWines(json)
-                cache.save(json)
+                cacheFor(cur).save(json)
                 _state.update { it.copy(loading = false, wines = wines, offline = false) }
             } catch (e: Exception) {
-                val saved = cache.load()
+                val saved = cacheFor(_state.value.cellar).load()
                 if (saved != null) {
                     _state.update { it.copy(loading = false, wines = saved, offline = true) }
                 } else {
@@ -139,9 +170,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _state.update { it.copy(refreshing = true) }
             try {
-                val json = api.fetchWinesJson()
+                val cur = _state.value.cellar
+                val json = api.fetchWinesJson(cur)
                 val wines = parseWines(json)
-                cache.save(json)
+                cacheFor(cur).save(json)
                 _state.update { it.copy(wines = wines, offline = false) }
                 refreshUserData()
             } catch (e: Exception) {
@@ -290,7 +322,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         runBusy("Richiesta inviata. Ti ricontatteremo presto.", { api.requestAvailability(wineId, email, phone, note) }, onDone)
 
     fun sendSupport(email: String, phone: String, message: String, onDone: (Boolean, String?) -> Unit) =
-        runBusy("Messaggio inviato. Grazie!", { api.sendSupport(email, phone, message) }, onDone)
+        runBusy("Messaggio inviato. Grazie!", { api.sendSupport(email, phone, message, _state.value.cellar) }, onDone)
 
     // ------------------------------------------------------------ account
 

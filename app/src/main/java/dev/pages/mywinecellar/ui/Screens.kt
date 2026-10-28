@@ -1,5 +1,7 @@
 package dev.pages.mywinecellar.ui
 
+
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -267,6 +269,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                     state.error != null -> ErrorView(state.error ?: "", onRetry = vm::load)
                     tab == 0 -> CatalogScreen(
                         state = state,
+                        onSelectCellar = vm::selectCellar,
                         onQuery = vm::setQuery,
                         onOnlyAvailable = vm::setOnlyAvailable,
                         onOpenFilters = { showFilters = true },
@@ -415,6 +418,7 @@ fun ErrorView(message: String, onRetry: () -> Unit) {
 @Composable
 private fun CatalogScreen(
     state: AppState,
+    onSelectCellar: (String) -> Unit,
     onQuery: (String) -> Unit,
     onOnlyAvailable: (Boolean) -> Unit,
     onOpenFilters: () -> Unit,
@@ -424,7 +428,35 @@ private fun CatalogScreen(
 ) {
     val visible = state.visible
     val focus = LocalFocusManager.current
+    var pendingCellar by remember { mutableStateOf<String?>(null) }
     Column(Modifier.fillMaxSize()) {
+        if (state.cellars.size > 1) {
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                state.cellars.forEach { c ->
+                    FilterChip(
+                        selected = c.slug == state.cellar,
+                        onClick = {
+                            if (c.slug != state.cellar) {
+                                if (state.cart.isEmpty()) onSelectCellar(c.slug) else pendingCellar = c.slug
+                            }
+                        },
+                        label = { Text(c.nome) },
+                    )
+                }
+            }
+        }
+        pendingCellar?.let { target ->
+            AlertDialog(
+                onDismissRequest = { pendingCellar = null },
+                title = { Text("Cambiare cantina?") },
+                text = { Text("Il carrello verrà svuotato.") },
+                confirmButton = { TextButton(onClick = { onSelectCellar(target); pendingCellar = null }) { Text("Cambia") } },
+                dismissButton = { TextButton(onClick = { pendingCellar = null }) { Text("Annulla") } },
+            )
+        }
         OutlinedTextField(
             value = state.query,
             onValueChange = onQuery,

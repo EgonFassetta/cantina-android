@@ -89,6 +89,7 @@ http.createServer(async (req, res) => {
   if (!uid) return send(res, 401, { message: 'JWT expired' })
 
   // bottiglie riservate per le serate: il vino w3 (2 bottiglie) è tutto riservato
+  if (p === '/rest/v1/app_cellars') return send(res, 200, [{ slug: 'egon', nome: 'La cantina di Egon' }])
   if (p === '/rest/v1/rpc/reserved_quantities') return send(res, 200, [{ wine_id: 'w3', riservate: 2 }])
 
   if (p === '/rest/v1/wine_user_state') {
