@@ -5,6 +5,8 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.pages.mywinecellar.data.ApiException
+import dev.pages.mywinecellar.data.Cellar
+import dev.pages.mywinecellar.data.DEFAULT_TENANT
 import dev.pages.mywinecellar.data.Backend
 import dev.pages.mywinecellar.data.GroupBy
 import dev.pages.mywinecellar.data.SortMode
@@ -141,7 +143,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 val cur2 = if (list.any { it.slug == cur }) cur else list.first().slug
                 _state.update { it.copy(cellars = list, cellar = cur2) }
             }
-        } catch (_: Exception) { /* nessun selettore: si usa la cantina salvata */ }
+        } catch (e: Exception) { /* nessun selettore: si usa la cantina salvata */ }
     }
 
     /** Cambia cantina: svuota il carrello (il server non accetta carrelli misti) e ricarica il catalogo. */
