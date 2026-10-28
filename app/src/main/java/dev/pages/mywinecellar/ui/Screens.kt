@@ -302,6 +302,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
         FiltersDialog(
             state = state,
             onApply = vm::applyFilters,
+            onGroupBy = vm::setGroupBy,
             onDismiss = { showFilters = false },
         )
     }
@@ -507,7 +508,7 @@ private fun CatalogScreen(
             WineList(
                 visible, state.favorites, onOpen, onToggleFavorite,
                 emptyText = "Nessun vino trovato.",
-                grouped = state.sort == dev.pages.mywinecellar.data.SortMode.CANTINA,
+                groupBy = state.groupBy,
             )
         }
     }
@@ -541,7 +542,7 @@ private fun WineList(
     onOpen: (Wine) -> Unit,
     onToggleFavorite: (Wine) -> Unit,
     emptyText: String,
-    grouped: Boolean = false,
+    groupBy: dev.pages.mywinecellar.data.GroupBy = dev.pages.mywinecellar.data.GroupBy.NESSUNA,
 ) {
     if (wines.isEmpty()) {
         Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
@@ -552,12 +553,12 @@ private fun WineList(
             contentPadding = PaddingValues(12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            if (grouped) {
-                val groups = wines.groupBy { it.cantina.ifBlank { "Altre cantine" } }
-                groups.forEach { (cantina, list) ->
-                    stickyHeader(key = "cantina-$cantina") {
+            if (groupBy != dev.pages.mywinecellar.data.GroupBy.NESSUNA) {
+                val groups = wines.groupBy { groupBy.key(it).ifBlank { "Altro" } }
+                groups.forEach { (titolo, list) ->
+                    stickyHeader(key = "gruppo-$titolo") {
                         Box(Modifier.fillMaxWidth().background(Parchment).padding(vertical = 6.dp, horizontal = 4.dp)) {
-                            Text(cantina, fontWeight = FontWeight.Bold, color = Accent, fontSize = 15.sp)
+                            Text(titolo, fontWeight = FontWeight.Bold, color = Accent, fontSize = 15.sp)
                         }
                     }
                     items(list, key = { it.id }) { wine ->

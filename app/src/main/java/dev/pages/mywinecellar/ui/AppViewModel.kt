@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.pages.mywinecellar.data.ApiException
 import dev.pages.mywinecellar.data.Backend
+import dev.pages.mywinecellar.data.GroupBy
 import dev.pages.mywinecellar.data.SortMode
 import dev.pages.mywinecellar.data.SupabaseApi
 import dev.pages.mywinecellar.data.WineCache
@@ -62,6 +63,8 @@ data class AppState(
     val cellars: List<Cellar> = emptyList(),
     /** Cantina mostrata al cliente. */
     val cellar: String = DEFAULT_TENANT,
+    /** Criterio di raggruppamento del catalogo. */
+    val groupBy: GroupBy = GroupBy.CANTINA,
     /** Allegati già letti, per id del vino. */
     val attachments: Map<String, List<WineAttachment>> = emptyMap(),
 ) {
@@ -117,6 +120,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             load()
         }
     }
+
+    fun setGroupBy(g: GroupBy) = _state.update { it.copy(groupBy = g) }
 
     /** Legge gli allegati di un vino quando si apre la scheda. */
     fun loadAttachments(wineId: String) {

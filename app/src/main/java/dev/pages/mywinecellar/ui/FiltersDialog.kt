@@ -19,14 +19,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.pages.mywinecellar.data.GroupBy
 import dev.pages.mywinecellar.data.SortMode
 
 @Composable
 fun FiltersDialog(
     state: AppState,
     onApply: (colore: String?, caratteristica: String?, tipoVino: String?, regione: String?, sort: SortMode) -> Unit,
+    onGroupBy: (GroupBy) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    var groupBy by remember { mutableStateOf(state.groupBy) }
     var colore by remember { mutableStateOf(state.colore) }
     var caratteristica by remember { mutableStateOf(state.caratteristica) }
     var tipoVino by remember { mutableStateOf(state.tipoVino) }
@@ -51,16 +54,25 @@ fun FiltersDialog(
                         FilterChip(selected = sort == mode, onClick = { sort = mode }, label = { Text(mode.label) })
                     }
                 }
+                Text(
+                    "Raggruppa per", fontSize = 13.sp, color = InkSoft,
+                    modifier = Modifier.padding(top = 10.dp, bottom = 4.dp),
+                )
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    GroupBy.values().forEach { g ->
+                        FilterChip(selected = groupBy == g, onClick = { groupBy = g }, label = { Text(g.label) })
+                    }
+                }
                 TextButton(
                     onClick = {
                         colore = null; caratteristica = null; tipoVino = null; regione = null
-                        sort = SortMode.CANTINA
+                        sort = SortMode.CANTINA; groupBy = GroupBy.CANTINA
                     },
                 ) { Text("Azzera tutto", color = WineBright) }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onApply(colore, caratteristica, tipoVino, regione, sort); onDismiss() }) {
+            TextButton(onClick = { onGroupBy(groupBy); onApply(colore, caratteristica, tipoVino, regione, sort); onDismiss() }) {
                 Text("Applica")
             }
         },
