@@ -186,3 +186,9 @@ private val parser = Json {
 /** Trasforma la risposta JSON del database in un elenco di vini. */
 fun parseWines(body: String): List<Wine> =
     parser.decodeFromString<List<WineDto>>(body).mapNotNull { it.toWine() }
+
+/** Cantina di default: la cantina principale, come nel database (default_tenant()). */
+const val DEFAULT_TENANT = "egon"
+
+/** Una cantina pubblicata nell'app (dalla vista app_cellars). */
+data class Cellar(val slug: String, val nome: String)

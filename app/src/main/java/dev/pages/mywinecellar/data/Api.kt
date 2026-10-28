@@ -50,14 +50,33 @@ class SupabaseApi(
     /** Scarica tutto il catalogo (a pagine da 1000, come previsto dal database). */
     suspend fun fetchWines(): List<Wine> = parseWines(fetchWinesJson())
 
+    /** Cantine abilitate per l'app (vista app_cellars: solo slug e nome, lettura pubblica). */
+    suspend fun fetchCellars(): List<Cellar> = withContext(Dispatchers.IO) {
+        val request = Request.Builder()
+            .url("$baseUrl/rest/v1/app_cellars?select=slug,nome&order=nome.asc")
+            .header("apikey", apiKey)
+            .header("Accept", "application/json")
+            .build()
+        http.newCall(request).execute().use { response ->
+            val body = response.body?.string().orEmpty()
+            if (!response.isSuccessful) throw ApiException("Elenco cantine non disponibile (${response.code})", response.code)
+            val rows = (json.parseToJsonElement(body) as? JsonArray) ?: JsonArray(emptyList())
+            rows.mapNotNull { el ->
+                val o = el as? JsonObject ?: return@mapNotNull null
+                val slug = o["slug"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                Cellar(slug = slug, nome = o["nome"]?.jsonPrimitive?.contentOrNull ?: slug)
+            }
+        }
+    }
+
     /** Il catalogo in formato JSON grezzo (serve anche per salvarlo nella cache). */
-    suspend fun fetchWinesJson(): String = withContext(Dispatchers.IO) {
+    suspend fun fetchWinesJson(tenant: String = DEFAULT_TENANT): String = withContext(Dispatchers.IO) {
         val result = mutableListOf<kotlinx.serialization.json.JsonElement>()
         var offset = 0
         val pageSize = 1000
         var done = false
         while (!done) {
-            val url = "$baseUrl/rest/v1/wines?select=*&order=cantina.asc,nome.asc&limit=$pageSize&offset=$offset"
+            val url = "$baseUrl/rest/v1/wines?select=*&tenant=eq.${enc(tenant)}&order=cantina.asc,nome.asc&limit=$pageSize&offset=$offset"
             val request = Request.Builder()
                 .url(url)
                 .header("apikey", apiKey)
@@ -344,11 +363,12 @@ class SupabaseApi(
     }
 
     /** Messaggio all'assistenza. */
-    suspend fun sendSupport(email: String, phone: String, message: String) {
+    suspend fun sendSupport(email: String, phone: String, message: String, tenant: String = DEFAULT_TENANT) {
         callFunction(
             "submit-request",
             buildJsonObject {
                 put("type", "support")
+                put("tenant", tenant)
                 put("email", email)
                 put("phone", phone)
                 put("message", message)
