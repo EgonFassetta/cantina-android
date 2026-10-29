@@ -1,0 +1,99 @@
+
+> cantina-server-tests@1.0.0 test
+> node --test tests/run.test.mjs
+
+TAP version 13
+# Subtest: legacy: mode = legacy, request_code non fa nulla, login e link funzionano come prima
+ok 1 - legacy: mode = legacy, request_code non fa nulla, login e link funzionano come prima
+  ---
+  duration_ms: 29.527572
+  type: 'test'
+  ...
+# Subtest: code: le vecchie azioni sono bloccate
+ok 2 - code: le vecchie azioni sono bloccate
+  ---
+  duration_ms: 4.429702
+  type: 'test'
+  ...
+# Subtest: code: serve una sessione valida per chiedere il codice
+ok 3 - code: serve una sessione valida per chiedere il codice
+  ---
+  duration_ms: 2.203931
+  type: 'test'
+  ...
+# Subtest: code: accesso completo con il codice ricevuto, e il codice non si riusa
+ok 4 - code: accesso completo con il codice ricevuto, e il codice non si riusa
+  ---
+  duration_ms: 13.699445
+  type: 'test'
+  ...
+# Subtest: code: codice sbagliato, blocco dopo 5 tentativi anche con il codice giusto
+ok 5 - code: codice sbagliato, blocco dopo 5 tentativi anche con il codice giusto
+  ---
+  duration_ms: 16.871763
+  type: 'test'
+  ...
+# Subtest: code: il codice scade dopo 10 minuti
+ok 6 - code: il codice scade dopo 10 minuti
+  ---
+  duration_ms: 5.915196
+  type: 'test'
+  ...
+# Subtest: code: un nuovo codice annulla quello precedente
+ok 7 - code: un nuovo codice annulla quello precedente
+  ---
+  duration_ms: 6.838414
+  type: 'test'
+  ...
+# Subtest: code: limite di 3 codici all'ora per email e di 10 per indirizzo IP
+ok 8 - code: limite di 3 codici all'ora per email e di 10 per indirizzo IP
+  ---
+  duration_ms: 18.907176
+  type: 'test'
+  ...
+# Subtest: code: la risposta è uguale per email con account e senza (niente enumerazione)
+ok 9 - code: la risposta è uguale per email con account e senza (niente enumerazione)
+  ---
+  duration_ms: 3.588727
+  type: 'test'
+  ...
+# Subtest: code: un codice chiesto per "login" non vale per "link"
+ok 10 - code: un codice chiesto per "login" non vale per "link"
+  ---
+  duration_ms: 3.365332
+  type: 'test'
+  ...
+# Subtest: code: salvare la cantina collega l'email solo dopo il codice
+ok 11 - code: salvare la cantina collega l'email solo dopo il codice
+  ---
+  duration_ms: 5.311003
+  type: 'test'
+  ...
+# Subtest: code: email già registrata nel collegamento = messaggio chiaro; account non anonimo rifiutato
+ok 12 - code: email già registrata nel collegamento = messaggio chiaro; account non anonimo rifiutato
+  ---
+  duration_ms: 8.782872
+  type: 'test'
+  ...
+# Subtest: code: login con email senza account dopo il codice corretto = errore generico
+ok 13 - code: login con email senza account dopo il codice corretto = errore generico
+  ---
+  duration_ms: 6.036272
+  type: 'test'
+  ...
+# EmailJS non configurato per i codici (manca EMAILJS_PRIVATE_KEY o EMAILJS_CODE_TEMPLATE_ID)
+# Subtest: code: se l'email non parte, l'errore è chiaro e nessun codice resta in giro
+ok 14 - code: se l'email non parte, l'errore è chiaro e nessun codice resta in giro
+  ---
+  duration_ms: 2.758734
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 223.070606

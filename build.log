@@ -1,0 +1,112 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.13/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preCantinaDebugBuild UP-TO-DATE
+> Task :app:generateCantinaDebugBuildConfig FROM-CACHE
+> Task :app:generateCantinaDebugResValues FROM-CACHE
+> Task :app:checkCantinaDebugAarMetadata
+> Task :app:mapCantinaDebugSourceSetPaths
+> Task :app:generateCantinaDebugResources
+> Task :app:packageCantinaDebugResources
+> Task :app:mergeCantinaDebugResources
+> Task :app:createCantinaDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksCantinaDebug FROM-CACHE
+> Task :app:parseCantinaDebugLocalResources
+> Task :app:processCantinaDebugMainManifest FROM-CACHE
+> Task :app:processCantinaDebugManifest FROM-CACHE
+> Task :app:processCantinaDebugManifestForPackage FROM-CACHE
+> Task :app:javaPreCompileCantinaDebug FROM-CACHE
+> Task :app:preCantinaDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileCantinaDebugUnitTest FROM-CACHE
+> Task :app:mergeCantinaDebugNativeDebugMetadata NO-SOURCE
+> Task :app:mergeCantinaDebugShaders
+> Task :app:compileCantinaDebugShaders NO-SOURCE
+> Task :app:generateCantinaDebugAssets UP-TO-DATE
+> Task :app:mergeCantinaDebugAssets
+> Task :app:compressCantinaDebugAssets FROM-CACHE
+> Task :app:desugarCantinaDebugFileDependencies FROM-CACHE
+> Task :app:mergeCantinaDebugJniLibFolders
+> Task :app:checkCantinaDebugDuplicateClasses
+> Task :app:mergeCantinaDebugNativeLibs
+> Task :app:processCantinaDebugResources
+> Task :app:mergeExtDexCantinaDebug FROM-CACHE
+> Task :app:mergeLibDexCantinaDebug FROM-CACHE
+
+> Task :app:stripCantinaDebugDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so. Run with --info option to learn more.
+
+> Task :app:validateSigningCantinaDebug
+> Task :app:writeCantinaDebugAppMetadata
+> Task :app:writeCantinaDebugSigningConfigVersions
+> Task :app:preCantinaFakeBuild UP-TO-DATE
+> Task :app:mergeCantinaFakeNativeDebugMetadata NO-SOURCE
+> Task :app:generateCantinaFakeBuildConfig FROM-CACHE
+> Task :app:generateCantinaFakeResValues FROM-CACHE
+> Task :app:checkCantinaFakeAarMetadata
+> Task :app:mapCantinaFakeSourceSetPaths
+> Task :app:generateCantinaFakeResources
+> Task :app:packageCantinaFakeResources
+> Task :app:createCantinaFakeCompatibleScreenManifests
+> Task :app:extractDeepLinksCantinaFake FROM-CACHE
+> Task :app:processCantinaFakeMainManifest FROM-CACHE
+> Task :app:processCantinaFakeManifest FROM-CACHE
+> Task :app:processCantinaFakeManifestForPackage FROM-CACHE
+> Task :app:javaPreCompileCantinaFake FROM-CACHE
+> Task :app:parseCantinaFakeLocalResources
+> Task :app:mergeCantinaFakeShaders
+> Task :app:compileCantinaFakeShaders NO-SOURCE
+> Task :app:generateCantinaFakeAssets UP-TO-DATE
+> Task :app:mergeCantinaFakeAssets
+> Task :app:compressCantinaFakeAssets FROM-CACHE
+> Task :app:desugarCantinaFakeFileDependencies FROM-CACHE
+> Task :app:mergeCantinaFakeJniLibFolders
+> Task :app:checkCantinaFakeDuplicateClasses
+> Task :app:mergeCantinaFakeNativeLibs
+> Task :app:mergeExtDexCantinaFake FROM-CACHE
+> Task :app:mergeLibDexCantinaFake FROM-CACHE
+> Task :app:mergeCantinaFakeResources
+
+> Task :app:stripCantinaFakeDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so. Run with --info option to learn more.
+
+> Task :app:validateSigningCantinaFake
+> Task :app:writeCantinaFakeAppMetadata
+> Task :app:writeCantinaFakeSigningConfigVersions
+> Task :app:processCantinaFakeResources
+> Task :app:compileCantinaDebugKotlin
+w: file:///home/runner/work/cantina-android/cantina-android/app/src/main/java/dev/pages/mywinecellar/data/Models.kt:31:36 This declaration needs opt-in. Its usage should be marked with '@kotlinx.serialization.ExperimentalSerializationApi' or '@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)'
+w: file:///home/runner/work/cantina-android/cantina-android/app/src/main/java/dev/pages/mywinecellar/ui/Screens.kt:226:48 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+
+> Task :app:compileCantinaFakeKotlin
+w: file:///home/runner/work/cantina-android/cantina-android/app/src/main/java/dev/pages/mywinecellar/data/Models.kt:31:36 This declaration needs opt-in. Its usage should be marked with '@kotlinx.serialization.ExperimentalSerializationApi' or '@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)'
+w: file:///home/runner/work/cantina-android/cantina-android/app/src/main/java/dev/pages/mywinecellar/ui/Screens.kt:226:48 'val Icons.Filled.List: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.List.
+
+> Task :app:compileCantinaDebugJavaWithJavac
+> Task :app:processCantinaDebugJavaRes
+> Task :app:bundleCantinaDebugClassesToCompileJar
+> Task :app:bundleCantinaDebugClassesToRuntimeJar
+> Task :app:dexBuilderCantinaDebug
+> Task :app:mergeCantinaDebugGlobalSynthetics FROM-CACHE
+> Task :app:compileCantinaFakeJavaWithJavac
+> Task :app:mergeProjectDexCantinaDebug
+> Task :app:mergeCantinaDebugJavaResource
+> Task :app:compileCantinaDebugUnitTestKotlin
+> Task :app:dexBuilderCantinaFake
+> Task :app:compileCantinaDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processCantinaDebugUnitTestJavaRes
+> Task :app:testCantinaDebugUnitTest
+> Task :app:mergeCantinaFakeGlobalSynthetics FROM-CACHE
+> Task :app:processCantinaFakeJavaRes
+> Task :app:mergeProjectDexCantinaFake
+> Task :app:mergeCantinaFakeJavaResource
+> Task :app:packageCantinaDebug
+> Task :app:createCantinaDebugApkListingFileRedirect
+> Task :app:assembleCantinaDebug
+> Task :app:packageCantinaFake
+> Task :app:createCantinaFakeApkListingFileRedirect
+> Task :app:assembleCantinaFake
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1793296028642.json
+
+BUILD SUCCESSFUL in 1m 7s
+80 actionable tasks: 55 executed, 25 from cache

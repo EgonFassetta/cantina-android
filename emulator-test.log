@@ -1,0 +1,125 @@
+Performing Streamed Install
+Success
+Starting: Intent { cmp=mywine.cellar/dev.pages.mywinecellar.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: mywine.cellar/dev.pages.mywinecellar.MainActivity
+TotalTime: 4555
+WaitTime: 4780
+Complete
+== 1) Catalogo
+OK: catalogo caricato dal database
+== 2) Scheda del vino e preferito (come ospite)
+OK: scheda del vino aperta
+OK: altri vini della stessa cantina
+OK: avviso per gli ospiti
+OK: cuore attivo (preferito salvato)
+== 3) Elenco preferiti
+OK: il vino è tra i preferiti
+== 4) Chiudo e riapro l'app: il preferito deve restare
+OK: catalogo ricaricato
+OK: il preferito è ancora lì dopo la riapertura
+OK: preferito rimosso
+== 4a) Gruppi per cantina, ricerca e aggiornamento
+OK: elenco
+OK: intestazione della cantina
+vini: prima=190, cercando Amarone=90
+OK: la ricerca restringe l'elenco
+OK: cancellando la ricerca tornano tutti i vini
+OK: l'elenco è ancora lì dopo l'aggiornamento
+== 4b) Filtri
+OK: elenco
+OK: finestra dei filtri
+OK: filtro attivo
+vini: prima=190, con filtro Rosso=187
+OK: il filtro per colore restringe l'elenco
+OK: filtri azzerati
+OK: azzerando i filtri tornano tutti i vini (190)
+== 5) Carrello
+OK: elenco
+OK: scheda con pulsante carrello
+OK: aggiunto al carrello
+OK: carrello con totale o prezzo da concordare
+OK: finestra della richiesta
+OK: controllo dei dati obbligatori
+OK: carrello svuotato
+== 6) Account e assistenza
+OK: schermata account da ospite
+OK: controllo email
+OK: modulo di accesso
+OK: finestra assistenza
+OK: controllo messaggio
+== 6c) Tema scuro e testo ingrandito
+OK: catalogo con tema scuro
+OK: scheda con tema scuro
+OK: catalogo con testo ingrandito
+OK: schermata account con testo ingrandito
+OK: catalogo di nuovo normale
+== 6e) Schermo largo (tablet) e telefono in orizzontale
+OK: catalogo su schermo largo
+OK: scheda su schermo largo
+OK: catalogo in orizzontale
+== 6d) Prove con server simulato: accesso con codice, richieste, eliminazione
+Success
+OK: catalogo dal server simulato
+-- bottiglie riservate per le serate (come sul sito)
+OK: il vino tutto riservato è mostrato come Riservata
+vini: tutti=3, solo disponibili=1
+OK: i vini riservati non compaiono tra i disponibili
+-- salvare la cantina con il codice
+OK: schermata account da ospite
+OK: passo del codice
+OK: codice sbagliato rifiutato
+OK: cantina salvata: sei collegato
+OK: il server ha collegato l'email all'account
+-- richiesta dal carrello
+OK: elenco
+OK: scheda con pulsante carrello
+OK: carrello con il vino
+OK: finestra della richiesta
+OK: carrello svuotato dopo l'invio
+OK: il server ha ricevuto la richiesta del carrello
+-- richiesta di disponibilità
+OK: elenco
+OK: scheda del vino non disponibile
+OK: finestra della richiesta
+OK: conferma di invio
+OK: il server ha ricevuto la richiesta di disponibilità
+-- assistenza: invio riuscito e limite di richieste
+OK: messaggio inviato
+OK: il server ha ricevuto il messaggio
+OK: messaggio del limite di richieste
+-- uscire e rientrare con il codice
+OK: di nuovo ospite
+OK: passo del codice per l'accesso
+OK: rientrato con il codice
+-- eliminare l'account
+OK: account eliminato: di nuovo ospite
+OK: il server ha eliminato l'utente
+-- modalità attuale (senza codice): tutto come prima
+OK: salvataggio immediato senza codice
+== 6f) Edizione Admin: accesso e aggiunta di un vino da etichetta (server simulato)
+Success
+OK: catalogo (edizione Admin)
+OK: schermata di accesso Admin
+OK: password sbagliata rifiutata
+OK: accesso amministratore riuscito
+OK: passo delle foto
+OK: anteprima del fronte
+OK: scheda di controllo con la bottiglia già presente
+OK: avviso di doppione
+OK: vino creato
+OK: il server ha salvato il nuovo vino
+OK: la foto dell'etichetta è stata caricata
+-- aggiungere bottiglie a una riga esistente
+OK: di nuovo il passo delle foto
+OK: anteprima del fronte
+OK: scheda di controllo
+OK: bottiglie aggiunte
+OK: il server ha aggiunto le bottiglie alla riga esistente
+OK: il nuovo vino compare nel catalogo
+OK: uscito dall'area Admin
+== 7) Apertura senza connessione (mostra l'ultimo catalogo salvato)
+OK: avviso di catalogo non aggiornato
+OK: i vini si vedono anche offline
+OK: nessun crash
