@@ -7,6 +7,7 @@ import android.net.Uri
 import android.util.Base64
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.clickable
@@ -99,7 +100,7 @@ fun CucinoSection(wine: Wine, vm: AppViewModel) {
             modifier = Modifier.width(120.dp),
         )
         Spacer(Modifier.height(8.dp))
-        Row(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TIMES.forEach { (k, label) -> FilterChip(selected = time == k, onClick = { time = k }, label = { Text(label) }) }
         }
         Spacer(Modifier.height(8.dp))
@@ -209,11 +210,11 @@ fun EveningDialog(vm: AppViewModel, onDismiss: () -> Unit) {
                     label = { Text("Ospiti") }, modifier = Modifier.width(120.dp),
                 )
                 Spacer(Modifier.height(8.dp))
-                Row(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     POURS.forEach { (k, label) -> FilterChip(selected = pour == k, onClick = { pour = k }, label = { Text(label) }) }
                 }
                 Spacer(Modifier.height(8.dp))
-                Row(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     COURSES.forEach { c ->
                         FilterChip(
                             selected = c in courses,
