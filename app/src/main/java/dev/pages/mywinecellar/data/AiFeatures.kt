@@ -40,11 +40,11 @@ data class EveningPlan(val ospiti: Int, val totale: Int, val nota: String, val c
 
 // ---- lettura delle risposte JSON (stessi campi che usa il sito) ----
 
-private fun JsonObject.str(key: String): String = this[key]?.jsonPrimitive?.contentOrNull.orEmpty()
-private fun JsonObject.int(key: String): Int = this[key]?.jsonPrimitive?.intOrNull ?: 0
-private fun JsonObject.strList(key: String): List<String> =
+internal fun JsonObject.str(key: String): String = this[key]?.jsonPrimitive?.contentOrNull.orEmpty()
+internal fun JsonObject.int(key: String): Int = this[key]?.jsonPrimitive?.intOrNull ?: 0
+internal fun JsonObject.strList(key: String): List<String> =
     (this[key] as? JsonArray)?.mapNotNull { (it as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull }.orEmpty()
-private fun JsonObject.objList(key: String): List<JsonObject> =
+internal fun JsonObject.objList(key: String): List<JsonObject> =
     (this[key] as? JsonArray)?.mapNotNull { it as? JsonObject }.orEmpty()
 
 fun parseFood(o: JsonObject): FoodResult = FoodResult(
