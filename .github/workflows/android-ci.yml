@@ -118,11 +118,12 @@ jobs:
 
       - name: Riavvia il server simulato (solo se il telefono virtuale si era bloccato)
         id: restart
-        if: steps.emulator.outcome == 'failure'
+        if: always() && steps.emulator.outcome == 'failure'
         run: |
-          if [ -f ci-results/emulator-dead.txt ]; then
+          if [ -f ci-results/emulator-dead.txt ] || adb devices 2>/dev/null | grep -q offline; then
             echo "Il telefono virtuale si era bloccato: ripeto la prova."
             pkill -f fake-supabase.mjs || true
+            adb kill-server 2>/dev/null || true
             rm -f ci-results/emulator-dead.txt
             nohup node ci/fake-supabase.mjs > ci-results/fake-server-2.log 2>&1 &
             sleep 2
