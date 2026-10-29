@@ -1,5 +1,6 @@
 package dev.pages.mywinecellar.ui
 
+import dev.pages.mywinecellar.data.WineAttachment
 import android.app.Application
 import android.content.Context
 import androidx.lifecycle.AndroidViewModel

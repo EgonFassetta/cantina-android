@@ -1,5 +1,6 @@
 package dev.pages.mywinecellar.ui
 
+import androidx.compose.ui.graphics.nativeCanvas
 import android.graphics.Paint
 import android.graphics.RectF
 import androidx.compose.foundation.Canvas
