@@ -65,7 +65,7 @@ tap() {
   while [ $SECONDS -lt $end ]; do
     if dump && xy=$(python3 ci/ui.py tap "$CUR" "$1"); then adb shell input tap $xy; sleep 2; return 0; fi
     # Se l'elemento non è sullo schermo, scorro verso il basso e riprovo (es. campo «Scaffale» sotto la piega).
-    n=$((n+1)); if [ $((n % 2)) -eq 0 ]; then adb shell input swipe 540 1500 540 700 300; fi
+    n=$((n+1)); adb shell input swipe 540 1500 540 700 300
     sleep 1
   done
   bad "elemento non trovato: $1"
@@ -82,7 +82,7 @@ hide_keyboard() {
 
 # Tocca il campo con quell'etichetta, svuota il contenuto e scrive il testo (gli spazi diventano %s per adb).
 type_into() {
-  tap "$1" 15 || return 1
+  tap "$1" 40 || return 1
   adb shell input keyevent KEYCODE_MOVE_END
   for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do adb shell input keyevent KEYCODE_DEL; done
   adb shell input text "$(printf '%s' "$2" | sed 's/ /%s/g')"
