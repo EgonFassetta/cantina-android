@@ -50,6 +50,31 @@ class SupabaseApi(
     /** Scarica tutto il catalogo (a pagine da 1000, come previsto dal database). */
     suspend fun fetchWines(): List<Wine> = parseWines(fetchWinesJson())
 
+    /** Allegati di un vino (tabella wine_attachments). Senza permesso di lettura la lista resta vuota. */
+    suspend fun fetchAttachments(wineId: String): List<WineAttachment> = withContext(Dispatchers.IO) {
+        val request = Request.Builder()
+            .url("$baseUrl/rest/v1/wine_attachments?select=id,categoria,filename,url&wine_id=eq.${enc(wineId)}&order=uploaded_at.asc")
+            .header("apikey", apiKey)
+            .header("Accept", "application/json")
+            .build()
+        http.newCall(request).execute().use { response ->
+            val body = response.body?.string().orEmpty()
+            if (!response.isSuccessful) return@withContext emptyList()
+            val rows = (json.parseToJsonElement(body) as? JsonArray) ?: JsonArray(emptyList())
+            rows.mapNotNull { el ->
+                val o = el as? JsonObject ?: return@mapNotNull null
+                val id = o["id"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+                val url = o["url"]?.jsonPrimitive?.contentOrNull?.takeIf { it.startsWith("http") } ?: return@mapNotNull null
+                WineAttachment(
+                    id = id,
+                    categoria = o["categoria"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    filename = o["filename"]?.jsonPrimitive?.contentOrNull ?: "allegato",
+                    url = url,
+                )
+            }
+        }
+    }
+
     /** Cantine abilitate per l'app (vista app_cellars: solo slug e nome, lettura pubblica). */
     suspend fun fetchCellars(): List<Cellar> = withContext(Dispatchers.IO) {
         val request = Request.Builder()

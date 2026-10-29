@@ -192,3 +192,6 @@ const val DEFAULT_TENANT = "egon"
 
 /** Una cantina pubblicata nell'app (dalla vista app_cellars). */
 data class Cellar(val slug: String, val nome: String)
+
+/** Allegato di un vino (scheda tecnica, certificato, ecc.): il link è pubblico, come sul sito. */
+data class WineAttachment(val id: String, val categoria: String, val filename: String, val url: String)
