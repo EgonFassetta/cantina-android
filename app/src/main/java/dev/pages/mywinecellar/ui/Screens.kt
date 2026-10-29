@@ -226,14 +226,6 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                     icon = { Icon(Icons.Filled.List, contentDescription = null) },
                     label = { Text("Mappa") },
                 )
-                if (AdminFeature.enabled) {
-                    NavigationBarItem(
-                        selected = tab == 5, colors = colors,
-                        onClick = { tab = 5; selectedId = null },
-                        icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
-                        label = { Text("Admin") },
-                    )
-                }
             }
         },
         snackbarHost = { SnackbarHost(snackbar) },
@@ -265,6 +257,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                     tab == 5 && AdminFeature.enabled -> AdminFeature.Screen(
                         onSessionChanged = vm::reloadSession,
                         onCatalogChanged = vm::refresh,
+                        cellar = state.cellar,
                     )
                     tab == 3 -> AccountScreen(
                         state = state,
@@ -276,6 +269,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                         onDelete = vm::deleteAccount,
                         onSupport = { showSupport = true },
                         onPrivacy = { uriHandler.openUri(PRIVACY_URL) },
+                        onOpenAdmin = { tab = 5; selectedId = null },
                     )
                     state.loading -> LoadingView()
                     state.error != null -> ErrorView(state.error ?: "", onRetry = vm::load)

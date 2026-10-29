@@ -44,6 +44,7 @@ fun AccountScreen(
     onDelete: (onUnavailable: () -> Unit) -> Unit,
     onSupport: () -> Unit,
     onPrivacy: () -> Unit,
+    onOpenAdmin: () -> Unit,
 ) {
     var email by rememberSaveable { mutableStateOf("") }
     var code by rememberSaveable { mutableStateOf("") }
@@ -159,6 +160,9 @@ fun AccountScreen(
         Text("Assistenza", fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
         OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = onSupport) { Text("Scrivici un messaggio") }
         TextButton(onClick = onPrivacy) { Text("Informativa sulla privacy", color = WineBright) }
+        if (dev.pages.mywinecellar.admin.AdminFeature.enabled) {
+            TextButton(onClick = onOpenAdmin) { Text("Area amministratore", color = InkSoft) }
+        }
 
         if (!state.isGuest) {
             TextButton(onClick = { confirmDelete = true }) {

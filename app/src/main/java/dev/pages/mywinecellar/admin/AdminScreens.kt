@@ -1,5 +1,6 @@
 package dev.pages.mywinecellar.admin
 
+import kotlinx.coroutines.launch
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -70,10 +71,12 @@ private val isTestBuild: Boolean get() = BuildConfig.SUPABASE_URL.startsWith("ht
 // ------------------------------------------------------------------ area Admin
 
 @Composable
-fun AdminRoot(onSessionChanged: () -> Unit, onCatalogChanged: () -> Unit) {
+fun AdminRoot(onSessionChanged: () -> Unit, onCatalogChanged: () -> Unit, cellar: String) {
     val vm: AdminViewModel = viewModel()
     val st by vm.state.collectAsState()
     var showLabel by remember { mutableStateOf(false) }
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     when {
         st.role == null -> AdminLogin(
@@ -88,6 +91,7 @@ fun AdminRoot(onSessionChanged: () -> Unit, onCatalogChanged: () -> Unit) {
             role = st.role ?: "admin", email = st.email, busy = st.busy,
             onLabel = { showLabel = true },
             onLogout = { vm.logout(onSessionChanged) },
+            onExport = { scope.launch { runCatching { exportCsv(ctx, cellar) } } },
         )
     }
 }
@@ -116,7 +120,7 @@ private fun AdminLogin(busy: Boolean, error: String?, onLogin: (String) -> Unit)
 }
 
 @Composable
-private fun AdminHome(role: String, email: String?, busy: Boolean, onLabel: () -> Unit, onLogout: () -> Unit) {
+private fun AdminHome(role: String, email: String?, busy: Boolean, onLabel: () -> Unit, onLogout: () -> Unit, onExport: () -> Unit) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -128,6 +132,7 @@ private fun AdminHome(role: String, email: String?, busy: Boolean, onLabel: () -
         )
         HorizontalDivider(color = Gold)
         Button(modifier = Modifier.fillMaxWidth(), onClick = onLabel) { Text("📷 Aggiungi vino da etichetta") }
+        OutlinedButton(enabled = !busy, modifier = Modifier.fillMaxWidth(), onClick = onExport) { Text("📄 Esporta la cantina in CSV") }
         Text(
             "Fotografa l'etichetta: l'app legge i dati e te li fa controllare prima di salvare.",
             color = InkSoft, fontSize = 13.sp,

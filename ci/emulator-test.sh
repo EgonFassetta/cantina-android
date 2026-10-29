@@ -431,7 +431,8 @@ if [ -f "$AAPK" ] && curl -s localhost:8787/_state > /dev/null 2>&1; then
   adb shell pm clear $APKG > /dev/null 2>&1
   adb shell am start -W -n $APKG/$ACT > /dev/null 2>&1
   expect "catalogo (edizione Admin)" "Disponibile|Non disponibile|Riservata" 90
-  tap "Admin" 15
+  tap "Cantina" 15
+  tap "Area amministratore" 15
   expect "schermata di accesso Admin" "Area Admin" 30
   type_into "Password" "sbagliata"
   tap "Entra" 15
@@ -470,7 +471,8 @@ if [ -f "$AAPK" ] && curl -s localhost:8787/_state > /dev/null 2>&1; then
   tap "Chiudi" 15
   tap "Catalogo" 15
   expect "il nuovo vino compare nel catalogo" "Nuovo Vino" 60
-  tap "Admin" 15
+  tap "Cantina" 15
+  tap "Area amministratore" 15
   tap "Esci dall'area Admin" 15
   expect "uscito dall'area Admin" "Accesso riservato all'amministratore. Inserisci la password." 30
   adb shell am force-stop $APKG
