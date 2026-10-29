@@ -36,17 +36,11 @@ android {
         }
     }
 
-    // Due edizioni dello stesso progetto: "cantina" (clienti, pubblicata sul Play Store) e "admin" (solo per l'amministratore,
-    // distribuita a parte). Il codice riservato all'amministratore esiste soltanto nell'edizione "admin".
+    // Un'unica app: clienti e amministratore nello stesso APK (l'area Admin si apre solo con la password).
     flavorDimensions += "edition"
     productFlavors {
         create("cantina") {
             dimension = "edition"
-        }
-        create("admin") {
-            dimension = "edition"
-            applicationIdSuffix = ".admin"
-            versionNameSuffix = "-admin"
         }
     }
 

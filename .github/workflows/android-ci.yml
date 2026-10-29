@@ -43,7 +43,7 @@ jobs:
         run: |
           set -o pipefail
           chmod +x gradlew
-          ./gradlew --no-daemon --console=plain testCantinaDebugUnitTest testAdminDebugUnitTest assembleCantinaDebug assembleCantinaFake assembleAdminFake assembleAdminDebug 2>&1 | tee ci-results/build.log
+          ./gradlew --no-daemon --console=plain testCantinaDebugUnitTest assembleCantinaDebug assembleCantinaFake 2>&1 | tee ci-results/build.log
 
       - name: Verifica la compilazione del file per il Play Store (senza firma)
         id: release_check
@@ -154,9 +154,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cp app/build/outputs/apk/cantina/debug/app-cantina-debug.apk cantina-prova.apk
-          cp app/build/outputs/apk/admin/debug/app-admin-debug.apk cantina-admin-prova.apk
           gh release view prova >/dev/null 2>&1 || gh release create prova --prerelease --title "Versione di prova" --notes "APK di prova, aggiornato a ogni modifica. Da installare sul telefono per provare l'app."
-          gh release upload prova cantina-prova.apk cantina-admin-prova.apk --clobber
+          gh release upload prova cantina-prova.apk --clobber
 
       - name: Pubblica i risultati
         if: always()

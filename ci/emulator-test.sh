@@ -423,8 +423,8 @@ else
   echo "SALTATO: variante di prova o server simulato non disponibili"
 fi
 
-AAPK=app/build/outputs/apk/admin/fake/app-admin-fake.apk
-APKG=mywine.cellar.admin.fake
+AAPK=app/build/outputs/apk/cantina/fake/app-cantina-fake.apk
+APKG=mywine.cellar.fake
 if [ -f "$AAPK" ] && curl -s localhost:8787/_state > /dev/null 2>&1; then
   echo "== 6f) Edizione Admin: accesso e aggiunta di un vino da etichetta (server simulato)"
   adb install -r "$AAPK" 2>&1 | tail -1

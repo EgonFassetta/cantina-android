@@ -228,8 +228,8 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                 )
                 if (AdminFeature.enabled) {
                     NavigationBarItem(
-                        selected = tab == 4, colors = colors,
-                        onClick = { tab = 4; selectedId = null },
+                        selected = tab == 5, colors = colors,
+                        onClick = { tab = 5; selectedId = null },
                         icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
                         label = { Text("Admin") },
                     )
@@ -262,7 +262,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                             .take(8),
                         onOpenOther = { selectedId = it.id },
                     )
-                    tab == 4 && AdminFeature.enabled -> AdminFeature.Screen(
+                    tab == 5 && AdminFeature.enabled -> AdminFeature.Screen(
                         onSessionChanged = vm::reloadSession,
                         onCatalogChanged = vm::refresh,
                     )
