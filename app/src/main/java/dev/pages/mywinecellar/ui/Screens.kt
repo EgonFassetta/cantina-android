@@ -250,6 +250,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                 when {
                     selected != null -> WineDetailScreen(
                         attachmentsFor = { id -> state.attachments[id].orEmpty() },
+                        vm = vm,
                         wine = selected,
                         qtyInCart = state.cart[selected.id] ?: 0,
                         canAdd = vm.canAdd(selected),
@@ -279,6 +280,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                     state.loading -> LoadingView()
                     state.error != null -> ErrorView(state.error ?: "", onRetry = vm::load)
                     tab == 0 -> CatalogScreen(
+                        vm = vm,
                         state = state,
                         onSelectCellar = vm::selectCellar,
                         onQuery = vm::setQuery,
@@ -433,6 +435,7 @@ fun ErrorView(message: String, onRetry: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CatalogScreen(
+    vm: AppViewModel,
     state: AppState,
     onSelectCellar: (String) -> Unit,
     onQuery: (String) -> Unit,
@@ -445,7 +448,18 @@ private fun CatalogScreen(
     val visible = state.visible
     val focus = LocalFocusManager.current
     var pendingCellar by remember { mutableStateOf<String?>(null) }
+    var showDish by remember { mutableStateOf(false) }
+    var showEvening by remember { mutableStateOf(false) }
+    if (showDish) DishPairingDialog(vm, state.wines, onOpen) { showDish = false }
+    if (showEvening) EveningDialog(vm) { showEvening = false }
     Column(Modifier.fillMaxSize()) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            TextButton(onClick = { showDish = true }) { Text("Abbina a un piatto") }
+            TextButton(onClick = { showEvening = true }) { Text("Pianifica una serata") }
+        }
         if (state.cellars.size > 1) {
             Row(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp),
@@ -649,6 +663,7 @@ fun WineThumb(wine: Wine, sizeDp: Int) {
 
 @Composable
 private fun WineDetailScreen(
+    vm: AppViewModel,
     wine: Wine,
     attachmentsFor: (String) -> List<WineAttachment>,
     qtyInCart: Int,
@@ -730,6 +745,7 @@ private fun WineDetailScreen(
                 }
             }
         }
+        CucinoSection(wine, vm)
         if (wine.giudizio != null || wine.profilo.isNotEmpty()) {
             Spacer(Modifier.height(14.dp))
             Text("Profilo del vino", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Accent)

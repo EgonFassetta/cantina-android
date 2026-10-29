@@ -336,6 +336,27 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         onDone = onDone,
     )
 
+    /** «Cosa ci cucino?» da una bottiglia. */
+    fun aiFood(wineId: String, ingredients: String, people: Int, time: String, onDone: (Result<dev.pages.mywinecellar.data.FoodResult>) -> Unit) {
+        viewModelScope.launch { onDone(runCatching { api.foodForWine(wineId, ingredients, people, time) }) }
+    }
+
+    /** Ingredienti da una foto del frigo. */
+    fun aiPhoto(dataUrl: String, onDone: (Result<List<String>>) -> Unit) {
+        viewModelScope.launch { onDone(runCatching { api.ingredientsFromPhoto(dataUrl) }) }
+    }
+
+    /** Abbinamento per piatto tra le bottiglie in vendita. */
+    fun aiDish(dish: String, candidates: List<Wine>, onDone: (Result<List<dev.pages.mywinecellar.data.WineMatch>>) -> Unit) {
+        viewModelScope.launch { onDone(runCatching { api.winesForDish(dish, candidates) }) }
+    }
+
+    /** Pianifica una serata nella cantina mostrata. */
+    fun aiEvening(guests: Int, pour: String, courses: List<String>, menu: String, onDone: (Result<dev.pages.mywinecellar.data.EveningPlan>) -> Unit) {
+        val tenant = _state.value.cellar
+        viewModelScope.launch { onDone(runCatching { api.planEvening(guests, pour, courses, menu, tenant) }) }
+    }
+
     fun sendAvailability(wineId: String, email: String, phone: String, note: String, onDone: (Boolean, String?) -> Unit) =
         runBusy("Richiesta inviata. Ti ricontatteremo presto.", { api.requestAvailability(wineId, email, phone, note) }, onDone)
 
