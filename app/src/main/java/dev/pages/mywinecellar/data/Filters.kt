@@ -2,6 +2,16 @@ package dev.pages.mywinecellar.data
 
 import java.util.Locale
 
+/** Criterio per le intestazioni di gruppo nel catalogo. */
+enum class GroupBy(val label: String, val key: (Wine) -> String) {
+    NESSUNA("Nessuna", { "" }),
+    CANTINA("Cantina", { it.cantina }),
+    TIPOLOGIA("Tipologia", { it.tipologia }),
+    FORMATO("Formato", { it.formato }),
+    COLORE("Colore", { it.coloreVino }),
+    CARATTERISTICA("Caratteristica", { it.caratteristica }),
+}
+
 enum class SortMode(val label: String) {
     CANTINA("Cantina"),
     NOME("Nome"),
