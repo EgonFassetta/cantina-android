@@ -561,6 +561,24 @@ if [ -f "$AAPK" ] && curl -s localhost:8787/_state > /dev/null 2>&1; then
   fake_check "il server ha eliminato l'ordine" "len(s['messages']['cart_requests'])==0 and len(s['messages']['support_requests'])==1"
   tap "Chiudi" 20
   expect "di nuovo l'area Admin" "^Collegato come" 30
+
+  echo "-- Cosa manca nella cantina (come sul sito)"
+  tap "🧭 Cosa manca nella cantina" 20
+  tap "Analizza la cantina" 20
+  expect "analisi della cantina" "^Totale: 9 bottiglie" 40
+  expect_s "categoria con bottiglie mancanti" "Pochi (mancano 4)" 30
+  shot 29-admin-cosa-manca
+  type_into "Bollicine (minimo)" "10"
+  tap "Salva obiettivi" 20
+  expect_s "obiettivi salvati" "Obiettivi salvati." 40
+  fake_check "il server ha ricevuto gli obiettivi" "s['gapsTargets'] and s['gapsTargets'].get('bollicine')==10 and s['gapsTargets'].get('rossi_strutturati')==4"
+  tap "Suggerisci acquisti" 20
+  expect_s "suggerimenti d'acquisto" "Valpolicella Ripasso · Veneto" 40
+  expect_s "link alla fonte (solo indirizzi web)" "esempio.it" 20
+  shot 30-admin-cosa-comprare
+  scroll_top
+  tap "Chiudi" 20
+  expect "di nuovo l'area Admin" "^Collegato come" 30
   tap "Esci dall'area Admin" 15
   expect "uscito dall'area Admin" "Accesso riservato all'amministratore. Inserisci la password." 30
   tap "Catalogo" 15

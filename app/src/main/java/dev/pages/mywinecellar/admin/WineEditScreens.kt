@@ -205,7 +205,7 @@ private fun Score(label: String, value: Int?, onChange: (Int?) -> Unit) {
 }
 
 @Composable
-private fun EditChoice(label: String, options: List<String>, selected: String, empty: String, onSelect: (String) -> Unit) {
+internal fun EditChoice(label: String, options: List<String>, selected: String, empty: String, onSelect: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth()) {
         Text(label, color = InkSoft, fontSize = 13.sp)

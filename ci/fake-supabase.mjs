@@ -19,6 +19,7 @@ const wineEdits = []       // modifiche delle schede (PATCH su wines)
 const winePrivate = new Map() // wine_id -> prezzo_acquisto
 let attachments = []       // righe di wine_attachments
 // Centro messaggi dell'Admin: una riga di prova per tabella
+let gapsTargets = null       // ultimi obiettivi salvati da «Cosa manca nella cantina»
 const messages = {
   cart_requests: [{ id: 'o1', creato_il: '2026-11-01T10:00:00Z', totale: 51, items: [{ nome: 'Rosso Disponibile', quantita: 2 }], contatto_email: 'cliente@prova.test', contatto_telefono: '3331234567' }],
   availability_requests: [{ id: 'a1', creato_il: '2026-11-02T10:00:00Z', wine_id: 'w2', note: 'Ne avete ancora?', contatto_email: 'altro@prova.test', contatto_telefono: '' }],
@@ -64,7 +65,7 @@ http.createServer(async (req, res) => {
   console.log(req.method, p + u.search)
 
   // ---- strumenti per le prove
-  if (p === '/_state') return send(res, 200, { mode, lastCode, requests, uploads, labelSaves, wineEdits, winePrivate: Object.fromEntries(winePrivate), attachments, messages, wineCount: WINES.length, users: [...users.values()], cartSize: cart.size, favorites: [...state.values()].filter((s) => s.preferito).length })
+  if (p === '/_state') return send(res, 200, { mode, lastCode, requests, uploads, labelSaves, wineEdits, winePrivate: Object.fromEntries(winePrivate), attachments, messages, gapsTargets, wineCount: WINES.length, users: [...users.values()], cartSize: cart.size, favorites: [...state.values()].filter((s) => s.preferito).length })
   if (p === '/_mode') { mode = body.mode || 'code'; return send(res, 200, { ok: true, mode }) }
 
   // ---- catalogo
@@ -214,6 +215,24 @@ http.createServer(async (req, res) => {
       WINES.push({ id, cantina: c.cantina, nome: c.nome, tipo: c.tipo, annata: c.annata, quantita: body.quantita, disponibile_vendita: false, colore_vino: c.colore_vino, effervescenza: c.effervescenza, dolcezza: c.dolcezza, regione: c.regione, paese: c.paese })
       return send(res, 200, { ok: true, id, quantita: body.quantita })
     }
+  }
+  if (p === '/functions/v1/cellar-gaps') {
+    if (!admins.has(uid)) return send(res, 403, { ok: false, error: 'Solo l\u2019Admin.' })
+    if (body.action === 'save_targets') { gapsTargets = body.obiettivi; return send(res, 200, { ok: true }) }
+    if (body.action === 'suggest') {
+      return send(res, 200, { ok: true, nota: 'Nota di prova.', acquisti: [{ stile: 'Valpolicella Ripasso', regione: 'Veneto', categoria: 'rossi_medi', categoriaLabel: 'Rossi di medio corpo', colma: 4, perche: 'Per le carni bianche.', abbinamenti: ['arrosti', 'funghi'], fascia: '15-30 €', bottiglie: 4, fonti: [{ url: 'https://www.esempio.it/ripasso', title: 'Ripasso' }, { url: 'javascript:alert(1)', title: 'no' }] }] })
+    }
+    const ob = (id, d) => (gapsTargets && Number.isFinite(gapsTargets[id]) ? gapsTargets[id] : d)
+    return send(res, 200, {
+      ok: true, ospiti: body.ospiti || 8, bottigliePerPortata: 2,
+      totale: { bottiglie: 9, etichette: 4 }, nonClassificati: { bottiglie: 1 },
+      categorie: [
+        { id: 'rossi_strutturati', label: 'Rossi strutturati', stato: 'ok', mancano: 0, bottiglie: 5, obiettivo: ob('rossi_strutturati', 4), quota: 55.6, etichette: 2, produttori: 1, esempi: ['Rosso Disponibile 2018'] },
+        { id: 'bollicine', label: 'Bollicine', stato: 'basso', mancano: 4, bottiglie: 2, obiettivo: ob('bollicine', 6), quota: 22.2, etichette: 1, produttori: 1, esempi: [] },
+      ],
+      portate: [{ portata: 'Aperitivo', categorie: ['Bollicine'], stato: 'scarsa', bottiglie: 0, serate: 0 }],
+      stili: [{ stile: 'Amarone', categoria: 'rossi_strutturati', bottiglie: 5, perche: 'Rosso importante.' }],
+    })
   }
   if (p === '/functions/v1/submit-request') {
     requests.push(body)
