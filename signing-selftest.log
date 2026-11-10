@@ -1,0 +1,13 @@
+	for: CN=Prova firma
+> Task :app:bundleCantinaRelease
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/signing_check-1794316078674.json
+
+BUILD SUCCESSFUL in 13s
+59 actionable tasks: 8 executed, 3 from cache, 48 up-to-date
+V2 Signer: certificate DN: CN=Prova firma
+V2 Signer: certificate SHA-256 digest: d330b3003978c39da5c7ce97842f036ea2ea7c5bdca8f470ff504a0219488516
+V2 Signer: certificate SHA-1 digest: 02433c23c9859dfe6f63d49f9be9b6665b352974
+V2 Signer: certificate MD5 digest: cfbfba4ac194456fabe9aa5f5b59625f
+
+jar verified.
+
