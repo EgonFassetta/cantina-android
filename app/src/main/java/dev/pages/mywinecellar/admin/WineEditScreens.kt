@@ -242,6 +242,7 @@ fun AdminWineTools(
     onEdit: () -> Unit,
     onWineChanged: () -> Unit,
     onAttachmentsChanged: () -> Unit,
+    isFavorite: Boolean = false,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -251,6 +252,12 @@ fun AdminWineTools(
     var categoria by remember { mutableStateOf(ATTACH_CATEGORIES.first()) }
     var toDelete by remember { mutableStateOf<WineAttachment?>(null) }
     var pendingUri by remember { mutableStateOf<Uri?>(null) }
+    var drinkForm by remember(wine.id) { mutableStateOf(false) }
+    var apertura by remember(wine.id) { mutableStateOf(todayIt()) }
+    var fine by remember(wine.id) { mutableStateOf(todayIt()) }
+    var drinkError by remember(wine.id) { mutableStateOf<String?>(null) }
+    var giudizio by remember(wine.id, wine.giudizioBevitore) { mutableStateOf(wine.giudizioBevitore) }
+    var confirmRestore by remember { mutableStateOf(false) }
 
     fun act(done: String, block: suspend () -> Unit, after: () -> Unit) {
         busy = true
@@ -311,6 +318,49 @@ fun AdminWineTools(
         if (wine.esclusoVetrina) Text("Esclusa dalla vetrina: la vedi solo tu.", color = InkSoft, fontSize = 14.sp)
         wine.prezzoAcquisto?.let { Text("Prezzo acquisto: " + dev.pages.mywinecellar.ui.euro(it), color = InkSoft, fontSize = 14.sp) }
 
+        // Stato della bottiglia: «Segna come bevuta» / «Ripristina» e giudizio del bevitore, come sul sito.
+        Text("Stato", fontWeight = FontWeight.SemiBold)
+        if (wine.bevuto) {
+            Text(drunkText(wine), color = WineBright)
+            OutlinedButton(enabled = !busy, onClick = { confirmRestore = true }) { Text("Ripristina come disponibile") }
+            OutlinedTextField(
+                value = giudizio, onValueChange = { giudizio = it.take(1000) },
+                label = { Text("Giudizio bevitore") }, placeholder = { Text("Cosa ne pensi di questa bottiglia?") },
+                minLines = 2, modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedButton(enabled = !busy, onClick = {
+                act("Giudizio salvato.", { Backend.api(context).saveDrinkerNote(wine, giudizio.trim(), isFavorite) }, onWineChanged)
+            }) { Text("Salva giudizio") }
+        } else if (!drinkForm) {
+            OutlinedButton(enabled = !busy, onClick = { drinkForm = true; drinkError = null }) { Text("Segna come bevuta") }
+            Text("Il giudizio del bevitore sarà visibile solo dopo aver segnato la bottiglia come bevuta.", color = InkSoft, fontSize = 13.sp)
+        } else {
+            Text("⚠ " + drinkWarningText(wine.quantita), color = MaterialTheme.colorScheme.error, fontSize = 14.sp)
+            OutlinedTextField(
+                value = apertura, onValueChange = { apertura = it.take(10) }, label = { Text("Apertura (gg/mm/aaaa)") },
+                singleLine = true, modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = fine, onValueChange = { fine = it.take(10) }, label = { Text("Fine (gg/mm/aaaa)") },
+                singleLine = true, modifier = Modifier.fillMaxWidth(),
+            )
+            drinkError?.let { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 14.sp) }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(enabled = !busy, onClick = {
+                    val a = parseDateIt(apertura)
+                    val b = parseDateIt(fine)
+                    if (a == null || b == null || b < a) {
+                        drinkError = "Inserisci entrambe le date (fine non prima di apertura)."
+                    } else {
+                        drinkError = null
+                        drinkForm = false
+                        act("Bottiglia segnata come bevuta.", { Backend.api(context).markDrunk(wine, a, b, isFavorite) }, onWineChanged)
+                    }
+                }) { Text("Conferma") }
+                TextButton(enabled = !busy, onClick = { drinkForm = false }) { Text("Annulla", color = WineBright) }
+            }
+        }
+
         Text("Foto della bottiglia", fontWeight = FontWeight.SemiBold)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(enabled = !busy, onClick = {
@@ -356,6 +406,21 @@ fun AdminWineTools(
         }
         if (busy) Text("Un momento…", color = InkSoft, fontSize = 14.sp)
         status?.let { Text(it, color = if (it.startsWith("Operazione")) MaterialTheme.colorScheme.error else InkSoft, fontSize = 14.sp) }
+    }
+
+    if (confirmRestore) {
+        AlertDialog(
+            onDismissRequest = { confirmRestore = false },
+            title = { Text("Ripristinare questa bottiglia come disponibile?") },
+            text = { Text(restoreWarningText(wine.quantita)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmRestore = false
+                    act("Bottiglia ripristinata come disponibile.", { Backend.api(context).restoreDrunk(wine, isFavorite) }, onWineChanged)
+                }) { Text("Sì, ripristina") }
+            },
+            dismissButton = { TextButton(onClick = { confirmRestore = false }) { Text("Annulla") } },
+        )
     }
 
     toDelete?.let { a ->

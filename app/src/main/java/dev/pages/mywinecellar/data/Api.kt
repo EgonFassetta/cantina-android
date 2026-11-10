@@ -152,6 +152,49 @@ class SupabaseApi(
         return JsonArray(result).toString()
     }
 
+    /** Bottiglie bevute dell'utente collegato (wine_user_state), come le legge il sito. */
+    suspend fun fetchDrunk(): Map<String, DrunkState> {
+        val uid = runCatching { userId() }.getOrNull() ?: return emptyMap()
+        val r = runCatching {
+            rest("GET", "wine_user_state?select=wine_id,data_apertura,data_fine,giudizio_bevitore&bevuto=eq.true&user_id=eq.${enc(uid)}")
+        }.getOrNull() ?: return emptyMap()
+        if (r.code !in 200..299) return emptyMap()
+        val rows = runCatching { json.parseToJsonElement(r.body) as? JsonArray }.getOrNull() ?: return emptyMap()
+        return rows.mapNotNull { el ->
+            val o = el as? JsonObject ?: return@mapNotNull null
+            fun f(k: String) = o[k]?.takeIf { it !is JsonNull }?.jsonPrimitive?.contentOrNull?.trim()?.takeIf { it.isNotEmpty() }
+            val id = f("wine_id") ?: return@mapNotNull null
+            id to DrunkState(f("data_apertura")?.take(10), f("data_fine")?.take(10), f("giudizio_bevitore").orEmpty())
+        }.toMap()
+    }
+
+    /**
+     * Salva lo stato personale «bevuta» (date e giudizio) senza toccare il preferito, come il sito:
+     * aggiorna la riga se c'è, altrimenti la crea.
+     */
+    suspend fun saveDrunkState(wineId: String, fields: JsonObject, preferito: Boolean) {
+        val uid = userId()
+        val patch = rest(
+            "PATCH", "wine_user_state?user_id=eq.${enc(uid)}&wine_id=eq.${enc(wineId)}",
+            fields.toString(), "return=representation",
+        )
+        requireOk(patch, "Impossibile salvare lo stato della bottiglia.")
+        val updated = runCatching { json.parseToJsonElement(patch.body).jsonArray.size }.getOrDefault(0)
+        if (updated > 0) return
+        val row = buildJsonObject {
+            put("user_id", uid)
+            put("wine_id", wineId)
+            put("preferito", preferito)
+            put("bevuto", false)
+            put("data_apertura", JsonNull)
+            put("data_fine", JsonNull)
+            put("giudizio_bevitore", "")
+            fields.forEach { (k, v) -> put(k, v) }
+        }
+        val ins = rest("POST", "wine_user_state?on_conflict=user_id,wine_id", row.toString(), "resolution=merge-duplicates,return=minimal")
+        requireOk(ins, "Impossibile salvare lo stato della bottiglia.")
+    }
+
     /** Prezzi d'acquisto (tabella wine_private, leggibile solo dall'Admin). Vuota se non si legge. */
     suspend fun fetchWinePrivate(): Map<String, Double?> {
         val r = runCatching { rest("GET", "wine_private?select=wine_id,prezzo_acquisto") }.getOrNull() ?: return emptyMap()

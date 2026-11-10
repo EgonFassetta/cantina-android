@@ -101,6 +101,12 @@ data class Wine(
     val esclusoVetrina: Boolean = false,
     /** Prezzo d'acquisto (tabella privata wine_private): letto solo per l'Admin. */
     val prezzoAcquisto: Double? = null,
+    /** Bottiglia segnata come bevuta dall'Admin (stato personale, tabella wine_user_state, come sul sito). */
+    val bevuto: Boolean = false,
+    /** Date di apertura e fine (aaaa-mm-gg) e giudizio del bevitore, solo per le bottiglie bevute. */
+    val dataApertura: String? = null,
+    val dataFine: String? = null,
+    val giudizioBevitore: String = "",
 ) {
     /** Bottiglie libere = quantità meno le riservate. */
     val liberi: Int get() = (quantita - riservate).coerceAtLeast(0)

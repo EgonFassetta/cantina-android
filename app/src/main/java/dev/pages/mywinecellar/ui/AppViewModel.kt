@@ -247,8 +247,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun withAdminData(wines: List<Wine>, slug: String): List<Wine> {
         if (!readsAsAdmin(slug)) return wines
         val prices = api.fetchWinePrivate()
-        if (prices.isEmpty()) return wines
-        return wines.map { w -> if (prices.containsKey(w.id)) w.copy(prezzoAcquisto = prices[w.id]) else w }
+        val drunk = api.fetchDrunk()
+        if (prices.isEmpty() && drunk.isEmpty()) return wines
+        return wines.map { w ->
+            val d = drunk[w.id]
+            w.copy(
+                prezzoAcquisto = if (prices.containsKey(w.id)) prices[w.id] else w.prezzoAcquisto,
+                bevuto = d != null, dataApertura = d?.dataApertura, dataFine = d?.dataFine, giudizioBevitore = d?.giudizio.orEmpty(),
+            )
+        }
     }
 
     /** Rilegge gli allegati di un vino (dopo un caricamento o un'eliminazione). */

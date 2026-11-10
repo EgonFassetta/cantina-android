@@ -65,7 +65,7 @@ http.createServer(async (req, res) => {
   console.log(req.method, p + u.search)
 
   // ---- strumenti per le prove
-  if (p === '/_state') return send(res, 200, { mode, lastCode, requests, uploads, labelSaves, wineEdits, winePrivate: Object.fromEntries(winePrivate), attachments, messages, gapsTargets, wineCount: WINES.length, users: [...users.values()], cartSize: cart.size, favorites: [...state.values()].filter((s) => s.preferito).length })
+  if (p === '/_state') return send(res, 200, { mode, lastCode, requests, uploads, labelSaves, wineEdits, winePrivate: Object.fromEntries(winePrivate), attachments, messages, gapsTargets, wineCount: WINES.length, users: [...users.values()], cartSize: cart.size, favorites: [...state.values()].filter((s) => s.preferito).length, drunk: [...state.entries()].filter(([, v]) => v.bevuto).map(([k, v]) => ({ wine: k.split('|')[1], ...v })) })
   if (p === '/_mode') { mode = body.mode || 'code'; return send(res, 200, { ok: true, mode }) }
 
   // ---- catalogo
@@ -120,17 +120,24 @@ http.createServer(async (req, res) => {
   if (p === '/rest/v1/wine_user_state') {
     const wine = eqVal(q(u, 'wine_id'))
     if (req.method === 'GET') {
+      // bottiglie bevute (bevuto=eq.true) oppure preferiti
+      if (q(u, 'bevuto') === 'eq.true') {
+        const rows = [...state.entries()].filter(([k, v]) => k.startsWith(uid + '|') && v.bevuto)
+          .map(([k, v]) => ({ wine_id: k.split('|')[1], data_apertura: v.data_apertura, data_fine: v.data_fine, giudizio_bevitore: v.giudizio_bevitore || '' }))
+        return send(res, 200, rows)
+      }
       const rows = [...state.entries()].filter(([k, v]) => k.startsWith(uid + '|') && v.preferito).map(([k]) => ({ wine_id: k.split('|')[1] }))
       return send(res, 200, rows)
     }
     if (req.method === 'PATCH') {
       const key = `${uid}|${wine}`
       if (!state.has(key)) return send(res, 200, [])
-      state.get(key).preferito = body.preferito
+      Object.assign(state.get(key), body)
       return send(res, 200, [{ wine_id: wine }])
     }
     if (req.method === 'POST') {
-      state.set(`${body.user_id}|${body.wine_id}`, { preferito: body.preferito })
+      const { user_id, wine_id, ...rest } = body
+      state.set(`${user_id}|${wine_id}`, rest)
       return send(res, 201)
     }
   }

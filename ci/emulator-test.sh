@@ -544,6 +544,30 @@ if [ -f "$AAPK" ] && curl -s localhost:8787/_state > /dev/null 2>&1; then
   tap "Sì, elimina" 20
   expect_s "allegato eliminato" "Allegato eliminato." 40
   fake_check "allegato tolto dal server" "len(s['attachments'])==0"
+
+  echo "-- segna come bevuta, giudizio del bevitore, ripristina (come sul sito)"
+  tap "Segna come bevuta" 20
+  expect_s "avviso sulla quantità" "^⚠ Proseguendo, la quantità verrà ridotta di 1 unità (da 7 a 6)" 30
+  type_into "Fine (gg/mm/aaaa)" "01/01/2000"
+  tap "Conferma" 20
+  expect_s "date sbagliate rifiutate" "Inserisci entrambe le date (fine non prima di apertura)." 30
+  adb shell input swipe 540 900 540 1400 300; sleep 1
+  type_into "Apertura (gg/mm/aaaa)" "01/11/2026"
+  type_into "Fine (gg/mm/aaaa)" "03/11/2026"
+  tap "Conferma" 20
+  expect_s "bottiglia segnata come bevuta" "^Aperta il 01/11/2026, finita il 03/11/2026 — 2 giorni" 40
+  fake_check "il server ha tolto una bottiglia e salvato le date" "any(e['id']=='w1' and e.get('quantita')==6 for e in s['wineEdits']) and any(d['wine']=='w1' and d['data_fine']=='2026-11-03' for d in s['drunk'])"
+  shot 28a-admin-bevuta
+  type_into "Giudizio bevitore" "Ottima"
+  tap "Salva giudizio" 20
+  expect_s "giudizio salvato" "Giudizio salvato." 30
+  fake_check "giudizio del bevitore sul server" "any(d['wine']=='w1' and d.get('giudizio_bevitore')=='Ottima' for d in s['drunk'])"
+  adb shell input swipe 540 900 540 1400 300; sleep 1
+  tap "Ripristina come disponibile" 20
+  expect "conferma del ripristino" "^Proseguendo, la quantità verrà aumentata di 1 unità (da 6 a 7)" 30
+  tap "Sì, ripristina" 20
+  expect_s "bottiglia di nuovo disponibile" "Segna come bevuta" 40
+  fake_check "il server ha rimesso la bottiglia" "any(e['id']=='w1' and e.get('quantita')==7 for e in s['wineEdits'][-3:]) and not any(d['wine']=='w1' for d in s['drunk'])"
   tap "Indietro" 15
   tap "Cantina" 15
   tap "Area amministratore" 15

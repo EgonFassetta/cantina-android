@@ -3,6 +3,9 @@ package dev.pages.mywinecellar.data
 /** Email dell'amministratore principale: come sul sito, senza assegnazione esplicita la sua cantina è quella principale. */
 const val ADMIN_EMAIL = "admin.winecellar@aol.it"
 
+/** Stato «bevuta» di una bottiglia per l'utente collegato. */
+data class DrunkState(val dataApertura: String?, val dataFine: String?, val giudizio: String)
+
 /** Una cantina mostrata nella schermata di scelta, con il numero di etichette visibili ai visitatori. */
 data class CellarInfo(val slug: String, val nome: String, val etichette: Int)
 

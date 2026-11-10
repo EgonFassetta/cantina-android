@@ -265,6 +265,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                             .take(8),
                         onOpenOther = { selectedId = it.id },
                         adminTenant = state.adminCellar?.slug?.takeIf { state.isAdminMode },
+                        isFavorite = selected.id in state.favorites,
                         onEdit = { editingId = selected.id },
                         onWineChanged = vm::refresh,
                         onAttachmentsChanged = { vm.reloadAttachments(selected.id) },
@@ -635,6 +636,12 @@ private fun WineCard(wine: Wine, isFavorite: Boolean, onToggleFavorite: () -> Un
                     color = if (wine.inVendita) Accent else InkSoft,
                     fontWeight = FontWeight.Medium, fontSize = 13.sp,
                 )
+                if (wine.bevuto) {
+                    Text(
+                        "Bevuta" + (wine.dataApertura?.let { " · aperta il " + dev.pages.mywinecellar.admin.dateIt(it) } ?: ""),
+                        color = WineBright, fontWeight = FontWeight.SemiBold, fontSize = 13.sp,
+                    )
+                }
             }
             IconButton(onClick = onToggleFavorite) {
                 Icon(
@@ -677,6 +684,7 @@ private fun WineDetailScreen(
     others: List<Wine>,
     onOpenOther: (Wine) -> Unit,
     adminTenant: String? = null,
+    isFavorite: Boolean = false,
     onEdit: () -> Unit = {},
     onWineChanged: () -> Unit = {},
     onAttachmentsChanged: () -> Unit = {},
@@ -714,6 +722,7 @@ private fun WineDetailScreen(
             color = if (wine.inVendita) Accent else InkSoft,
             fontWeight = FontWeight.SemiBold,
         )
+        if (wine.bevuto) Text("Bevuta", color = WineBright, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(12.dp))
         if (wine.inVendita) {
             if (canAdd) {
@@ -743,6 +752,7 @@ private fun WineDetailScreen(
             dev.pages.mywinecellar.admin.AdminWineTools(
                 wine = wine, attachments = attachments, tenant = adminTenant,
                 onEdit = onEdit, onWineChanged = onWineChanged, onAttachmentsChanged = onAttachmentsChanged,
+                isFavorite = isFavorite,
             )
         } else if (attachments.isNotEmpty()) {
             Spacer(Modifier.height(14.dp))
