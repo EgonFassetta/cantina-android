@@ -72,6 +72,24 @@ tap() {
   return 1
 }
 
+# Come expect, ma scorrendo la schermata verso il basso finché il testo compare (per le schede lunghe).
+expect_s() {
+  local end=$((SECONDS + ${3:-30}))
+  while [ $SECONDS -lt $end ]; do
+    if dump && python3 ci/ui.py has "$CUR" "$2"; then ok "$1"; return 0; fi
+    adb shell input swipe 540 1400 540 900 300
+    sleep 1
+  done
+  bad "$1 (non compare: $2)"
+  return 1
+}
+
+# Torna all'inizio della schermata (scorrendo verso l'alto).
+scroll_top() {
+  for i in 1 2 3 4 5 6 7 8; do adb shell input swipe 540 700 540 1700 150; done
+  sleep 1
+}
+
 shot() { adb exec-out screencap -p > "ci-results/$1.png"; [ -s "ci-results/$1.png" ] || abort_if_dead; }
 
 # La tastiera di sistema è spenta (vedi sopra): non c'è nulla da chiudere. Premere "indietro" qui cambierebbe schermata,
@@ -494,6 +512,39 @@ if [ -f "$AAPK" ] && curl -s localhost:8787/_state > /dev/null 2>&1; then
   expect "l'Admin vede la propria cantina (senza «Cambia cantina»)" "La tua cantina (Admin)" 60
   expect "il nuovo vino compare nel catalogo" "Nuovo Vino" 60
   shot 25-admin-catalogo
+
+  echo "-- scheda del vino modificabile dall'Admin (come sul sito)"
+  tap "Rosso Disponibile" 20
+  tap "✏️ Modifica scheda" 30
+  expect "modulo di modifica" "Bottiglie" 30
+  shot 26-admin-modifica
+  type_into "Bottiglie" "7"
+  type_into "Scaffale (es. 3.4 oppure Box1)" "Box9"
+  tap "Salva" 30
+  expect "posizione sbagliata rifiutata" "^Posizione non valida" 30
+  scroll_top
+  type_into "Scaffale (es. 3.4 oppure Box1)" "Box2"
+  type_into "Prezzo acquisto € (lo vedi solo tu)" "9,5"
+  tap "Salva" 30
+  expect_s "scheda salvata: di nuovo la scheda con gli strumenti Admin" "Strumenti Admin" 40
+  fake_check "il server ha ricevuto la modifica (bottiglie e scaffale)" "any(e['id']=='w1' and e.get('quantita')==7 and e.get('posizione')=='Box2' for e in s['wineEdits'])"
+  fake_check "il prezzo d'acquisto è nella tabella privata" "s['winePrivate'].get('w1')==9.5"
+  expect_s "il prezzo d'acquisto si vede nella scheda" "^Prezzo acquisto: €" 30
+
+  echo "-- foto della bottiglia e allegati"
+  tap "Usa foto bottiglia di prova" 20
+  expect_s "foto aggiornata" "Foto aggiornata." 40
+  fake_check "la foto è stata caricata e collegata al vino" "any(e['id']=='w1' and str(e.get('immagine_url','')).startswith('http') for e in s['wineEdits'])"
+  tap "Usa PDF di prova" 20
+  expect_s "allegato caricato" "Allegato caricato." 40
+  expect_s "l'allegato compare nell'elenco" "prova.pdf" 30
+  shot 27-admin-allegati
+  fake_check "allegato registrato" "len(s['attachments'])==1 and s['attachments'][0]['categoria']=='Scheda Tecnica' and any(x.startswith('allegati/') for x in s['uploads'])"
+  tap "Elimina" 20
+  tap "Sì, elimina" 20
+  expect_s "allegato eliminato" "Allegato eliminato." 40
+  fake_check "allegato tolto dal server" "len(s['attachments'])==0"
+  tap "Indietro" 15
   tap "Cantina" 15
   tap "Area amministratore" 15
   tap "Esci dall'area Admin" 15

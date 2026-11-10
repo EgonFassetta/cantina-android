@@ -243,6 +243,22 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Per l'Admin aggiunge i prezzi d'acquisto (tabella privata), come il sito. */
+    private suspend fun withAdminData(wines: List<Wine>, slug: String): List<Wine> {
+        if (!readsAsAdmin(slug)) return wines
+        val prices = api.fetchWinePrivate()
+        if (prices.isEmpty()) return wines
+        return wines.map { w -> if (prices.containsKey(w.id)) w.copy(prezzoAcquisto = prices[w.id]) else w }
+    }
+
+    /** Rilegge gli allegati di un vino (dopo un caricamento o un'eliminazione). */
+    fun reloadAttachments(wineId: String) {
+        viewModelScope.launch {
+            val list = runCatching { api.fetchAttachments(wineId) }.getOrDefault(emptyList())
+            _state.update { it.copy(attachments = it.attachments + (wineId to list)) }
+        }
+    }
+
     /** La cantina mostrata è quella dell'Admin collegato: si legge con la sua sessione (anche se privata). */
     private fun readsAsAdmin(slug: String): Boolean = _state.value.adminCellar?.slug == slug
 
@@ -259,7 +275,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         try {
             val cur = _state.value.cellar
             val json = api.fetchWinesJson(cur, withSession = readsAsAdmin(cur))
-            val wines = parseWines(json)
+            val wines = withAdminData(parseWines(json), cur)
             cacheFor(cur).save(json)
             _state.update { it.copy(loading = false, wines = wines, offline = false) }
         } catch (e: Exception) {
@@ -281,7 +297,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 val cur = _state.value.cellar
                 val json = api.fetchWinesJson(cur, withSession = readsAsAdmin(cur))
-                val wines = parseWines(json)
+                val wines = withAdminData(parseWines(json), cur)
                 cacheFor(cur).save(json)
                 _state.update { it.copy(wines = wines, offline = false) }
                 refreshUserData()

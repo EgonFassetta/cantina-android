@@ -184,7 +184,11 @@ class LabelViewModel(app: Application) : AndroidViewModel(app) {
                 if (front != null && id.isNotEmpty()) {
                     try {
                         // la foto del fronte diventa l'immagine del vino (per una riga esistente solo se non ne ha già una)
-                        if (modo != "aggiungi" || !api.wineHasImage(id)) api.attachWinePhoto(id, front.bytes)
+                        if (modo != "aggiungi" || !api.wineHasImage(id)) {
+                            // nella cartella della cantina dell'Admin, come il sito (la principale resta nella radice)
+                            val tenant = AdminPrefs.cellar(getApplication<Application>())?.slug ?: dev.pages.mywinecellar.data.DEFAULT_TENANT
+                            api.changeWinePhoto(tenant, id, front.bytes)
+                        }
                     } catch (e: Exception) {
                         photoNote = " La foto però non è stata caricata: aggiungila dalla scheda del vino."
                     }

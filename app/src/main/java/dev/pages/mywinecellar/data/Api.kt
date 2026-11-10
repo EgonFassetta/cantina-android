@@ -152,6 +152,18 @@ class SupabaseApi(
         return JsonArray(result).toString()
     }
 
+    /** Prezzi d'acquisto (tabella wine_private, leggibile solo dall'Admin). Vuota se non si legge. */
+    suspend fun fetchWinePrivate(): Map<String, Double?> {
+        val r = runCatching { rest("GET", "wine_private?select=wine_id,prezzo_acquisto") }.getOrNull() ?: return emptyMap()
+        if (r.code !in 200..299) return emptyMap()
+        val rows = runCatching { json.parseToJsonElement(r.body) as? JsonArray }.getOrNull() ?: return emptyMap()
+        return rows.mapNotNull { el ->
+            val o = el as? JsonObject ?: return@mapNotNull null
+            val id = o["wine_id"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+            id to o["prezzo_acquisto"]?.jsonPrimitive?.contentOrNull?.replace(',', '.')?.toDoubleOrNull()
+        }.toMap()
+    }
+
     /** Lettura pubblica (solo chiave pubblica, senza sessione), come un visitatore del sito. */
     private suspend fun publicGet(path: String): Resp = withContext(Dispatchers.IO) {
         val request = Request.Builder()

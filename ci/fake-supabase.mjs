@@ -15,6 +15,9 @@ const cart = new Map()      // `${uid}|${wine}` -> quantity
 const requests = []
 const uploads = []
 const labelSaves = []
+const wineEdits = []       // modifiche delle schede (PATCH su wines)
+const winePrivate = new Map() // wine_id -> prezzo_acquisto
+let attachments = []       // righe di wine_attachments
 const admins = new Set()   // id utenti con accesso amministratore
 const codes = new Map()     // `${email}|${purpose}` -> code
 let lastCode = null
@@ -55,7 +58,7 @@ http.createServer(async (req, res) => {
   console.log(req.method, p + u.search)
 
   // ---- strumenti per le prove
-  if (p === '/_state') return send(res, 200, { mode, lastCode, requests, uploads, labelSaves, wineCount: WINES.length, users: [...users.values()], cartSize: cart.size, favorites: [...state.values()].filter((s) => s.preferito).length })
+  if (p === '/_state') return send(res, 200, { mode, lastCode, requests, uploads, labelSaves, wineEdits, winePrivate: Object.fromEntries(winePrivate), attachments, wineCount: WINES.length, users: [...users.values()], cartSize: cart.size, favorites: [...state.values()].filter((s) => s.preferito).length })
   if (p === '/_mode') { mode = body.mode || 'code'; return send(res, 200, { ok: true, mode }) }
 
   // ---- catalogo
@@ -65,12 +68,19 @@ http.createServer(async (req, res) => {
       const w = WINES.find((x) => x.id === id)
       if (!w) return send(res, 200, [])
       Object.assign(w, body)
+      wineEdits.push({ id, ...body })
       return send(res, 200, [{ id }])
     }
     const offset = parseInt(q(u, 'offset') || '0', 10)
     // conteggio delle etichette per la scelta della cantina (select=tenant)
     if (q(u, 'select') === 'tenant') return send(res, 200, offset === 0 ? WINES.map(() => ({ tenant: 'egon' })) : [])
     return send(res, 200, offset === 0 ? WINES : [])
+  }
+
+  // ---- allegati: lettura pubblica (come sul server vero)
+  if (p === '/rest/v1/wine_attachments' && req.method === 'GET') {
+    const wid = eqVal(q(u, 'wine_id'))
+    return send(res, 200, attachments.filter((a) => a.wine_id === wid))
   }
 
   // ---- cantine (lettura pubblica, come sul server vero): pubbliche (cellars) e abilitate all'app (app_cellars)
@@ -129,6 +139,25 @@ http.createServer(async (req, res) => {
       return send(res, 204)
     }
   }
+
+  // ---- prezzo d'acquisto (tabella privata, solo Admin)
+  if (p === '/rest/v1/wine_private') {
+    if (!admins.has(uid)) return send(res, 200, [])
+    if (req.method === 'GET') return send(res, 200, [...winePrivate.entries()].map(([wine_id, prezzo_acquisto]) => ({ wine_id, prezzo_acquisto })))
+    if (req.method === 'POST') { winePrivate.set(body.wine_id, body.prezzo_acquisto); return send(res, 201, [{ wine_id: body.wine_id }]) }
+  }
+  // ---- allegati: inserimento ed eliminazione (solo Admin)
+  if (p === '/rest/v1/wine_attachments') {
+    if (!admins.has(uid)) return send(res, 200, [])
+    if (req.method === 'POST') { attachments.push(body); return send(res, 201, [body]) }
+    if (req.method === 'DELETE') {
+      const id = eqVal(q(u, 'id'))
+      const gone = attachments.filter((a) => a.id === id)
+      attachments = attachments.filter((a) => a.id !== id)
+      return send(res, 200, gone)
+    }
+  }
+  if (p.startsWith('/storage/v1/object/allegati/')) { uploads.push('allegati/' + p.slice('/storage/v1/object/allegati/'.length)); return send(res, 200, { Key: p }) }
 
   // ---- foto delle etichette (contenitore pubblico "etichette")
   if (p.startsWith('/storage/v1/object/etichette/')) { uploads.push(p.slice('/storage/v1/object/etichette/'.length)); return send(res, 200, { Key: p }) }

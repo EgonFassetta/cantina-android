@@ -122,6 +122,8 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
 
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
+    // Vino in modifica (solo Admin): si apre dalla scheda con «Modifica scheda».
+    var editingId by rememberSaveable { mutableStateOf<String?>(null) }
     var availabilityFor by remember { mutableStateOf<Wine?>(null) }
     var showSendCart by remember { mutableStateOf(false) }
     var showSupport by remember { mutableStateOf(false) }
@@ -148,7 +150,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                 },
                 navigationIcon = {
                     if (selected != null) {
-                        IconButton(onClick = { selectedId = null }) {
+                        IconButton(onClick = { if (editingId != null) editingId = null else selectedId = null }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
                         }
                     }
@@ -243,7 +245,12 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
             state.email?.let { EmailBanner(it) }
             Box(Modifier.weight(1f).widthIn(max = 640.dp).fillMaxWidth()) {
                 selected?.let { LaunchedEffect(it.id) { vm.loadAttachments(it.id) } }
+                val editing = state.wines.firstOrNull { it.id == editingId }?.takeIf { state.isAdminMode }
                 when {
+                    editing != null -> dev.pages.mywinecellar.admin.WineEditScreen(editing) { changed ->
+                        editingId = null
+                        if (changed) vm.refresh()
+                    }
                     selected != null -> WineDetailScreen(
                         attachmentsFor = { id -> state.attachments[id].orEmpty() },
                         vm = vm,
@@ -257,6 +264,10 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                             .filter { it.cantina.isNotBlank() && it.cantina == selected.cantina && it.id != selected.id }
                             .take(8),
                         onOpenOther = { selectedId = it.id },
+                        adminTenant = state.adminCellar?.slug?.takeIf { state.isAdminMode },
+                        onEdit = { editingId = selected.id },
+                        onWineChanged = vm::refresh,
+                        onAttachmentsChanged = { vm.reloadAttachments(selected.id) },
                     )
                     tab == 5 && AdminFeature.enabled -> AdminFeature.Screen(
                         onSessionChanged = vm::reloadSession,
@@ -664,6 +675,10 @@ private fun WineDetailScreen(
     onOpenSite: (String) -> Unit,
     others: List<Wine>,
     onOpenOther: (Wine) -> Unit,
+    adminTenant: String? = null,
+    onEdit: () -> Unit = {},
+    onWineChanged: () -> Unit = {},
+    onAttachmentsChanged: () -> Unit = {},
 ) {
     var zoom by remember(wine.id) { mutableStateOf(false) }
     val scroll = remember(wine.id) { ScrollState(0) }
@@ -722,7 +737,13 @@ private fun WineDetailScreen(
         DetailRow("Prezzo", wine.prezzoMostrato?.let { euro(it) } ?: "")
         DetailRow("Note", wine.nota)
         val attachments = attachmentsFor(wine.id)
-        if (attachments.isNotEmpty()) {
+        if (adminTenant != null) {
+            // Admin: come sul sito può modificare la scheda, cambiare la foto e gestire gli allegati.
+            dev.pages.mywinecellar.admin.AdminWineTools(
+                wine = wine, attachments = attachments, tenant = adminTenant,
+                onEdit = onEdit, onWineChanged = onWineChanged, onAttachmentsChanged = onAttachmentsChanged,
+            )
+        } else if (attachments.isNotEmpty()) {
             Spacer(Modifier.height(14.dp))
             Text("Allegati", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Accent)
             attachments.forEach { a ->
