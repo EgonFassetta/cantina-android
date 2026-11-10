@@ -19,6 +19,19 @@ const wineEdits = []       // modifiche delle schede (PATCH su wines)
 const winePrivate = new Map() // wine_id -> prezzo_acquisto
 let attachments = []       // righe di wine_attachments
 // Centro messaggi dell'Admin: una riga di prova per tabella
+// Impostazioni (site_settings) e amministratori, per le prove di Impostazioni e Super Admin
+const settings = new Map()
+let cellarPublic = true
+let adminsList = [{ email: 'admin@prova.test', role: 'super_admin' }, { email: 'marco@prova.test', role: 'admin' }]
+let cellarsList = [
+  { email: 'admin@prova.test', nome: 'La cantina di Egon', slug: 'egon', vini: 3, app_abilitata: true },
+  { email: 'marco@prova.test', nome: 'Cantina di Marco', slug: 'marco', vini: 0, app_abilitata: false },
+]
+// Una bottiglia già bevuta dall'Admin questo mese (per il calendario «Bottiglie bevute nel mese»)
+const isoDay = (d) => d.toISOString().slice(0, 10)
+const oggi = new Date()
+const apertaIl = new Date(oggi.getFullYear(), oggi.getMonth(), 1, 12)
+state.set('admin-user|w2', { preferito: false, bevuto: true, data_apertura: isoDay(apertaIl), data_fine: isoDay(new Date(oggi.getFullYear(), oggi.getMonth(), oggi.getDate(), 12)), giudizio_bevitore: '' })
 let gapsTargets = null       // ultimi obiettivi salvati da «Cosa manca nella cantina»
 const messages = {
   cart_requests: [{ id: 'o1', creato_il: '2026-11-01T10:00:00Z', totale: 51, items: [{ nome: 'Rosso Disponibile', quantita: 2 }], contatto_email: 'cliente@prova.test', contatto_telefono: '3331234567' }],
@@ -65,7 +78,7 @@ http.createServer(async (req, res) => {
   console.log(req.method, p + u.search)
 
   // ---- strumenti per le prove
-  if (p === '/_state') return send(res, 200, { mode, lastCode, requests, uploads, labelSaves, wineEdits, winePrivate: Object.fromEntries(winePrivate), attachments, messages, gapsTargets, wineCount: WINES.length, users: [...users.values()], cartSize: cart.size, favorites: [...state.values()].filter((s) => s.preferito).length, drunk: [...state.entries()].filter(([, v]) => v.bevuto).map(([k, v]) => ({ wine: k.split('|')[1], ...v })) })
+  if (p === '/_state') return send(res, 200, { mode, lastCode, requests, uploads, labelSaves, wineEdits, winePrivate: Object.fromEntries(winePrivate), attachments, messages, gapsTargets, settings: Object.fromEntries(settings), cellarPublic, adminsList, cellarsList, wineCount: WINES.length, users: [...users.values()], cartSize: cart.size, favorites: [...state.values()].filter((s) => s.preferito).length, drunk: [...state.entries()].filter(([, v]) => v.bevuto).map(([k, v]) => ({ wine: k.split('|')[1], ...v })) })
   if (p === '/_mode') { mode = body.mode || 'code'; return send(res, 200, { ok: true, mode }) }
 
   // ---- catalogo
@@ -154,6 +167,19 @@ http.createServer(async (req, res) => {
     }
   }
 
+  // ---- impostazioni del sito (site_settings)
+  if (p === '/rest/v1/site_settings') {
+    if (req.method === 'GET') {
+      const key = eqVal(q(u, 'key'))
+      return send(res, 200, settings.has(key) ? [{ value: settings.get(key) }] : [])
+    }
+    if (req.method === 'POST') {
+      if (!admins.has(uid)) return send(res, 201, [])
+      settings.set(body.key, body.value)
+      return send(res, 201, [{ key: body.key }])
+    }
+  }
+
   // ---- centro messaggi (solo Admin)
   const msgTable = p.startsWith('/rest/v1/') ? p.slice('/rest/v1/'.length) : ''
   if (messages[msgTable]) {
@@ -222,6 +248,26 @@ http.createServer(async (req, res) => {
       WINES.push({ id, cantina: c.cantina, nome: c.nome, tipo: c.tipo, annata: c.annata, quantita: body.quantita, disponibile_vendita: false, colore_vino: c.colore_vino, effervescenza: c.effervescenza, dolcezza: c.dolcezza, regione: c.regione, paese: c.paese })
       return send(res, 200, { ok: true, id, quantita: body.quantita })
     }
+  }
+  if (p === '/functions/v1/admin-cellar') {
+    if (!admins.has(uid)) return send(res, 403, { ok: false, error: 'Solo l\u2019Admin.' })
+    if (body.action === 'my_cellar') return send(res, 200, { ok: true, slug: 'egon', nome: 'La cantina di Egon', pubblica: cellarPublic })
+    if (body.action === 'set_public') { cellarPublic = !!body.pubblica; return send(res, 200, { ok: true, pubblica: cellarPublic }) }
+    if (body.action === 'list') return send(res, 200, { ok: true, principale: 'egon', cantine: cellarsList })
+    if (body.action === 'set') {
+      const c = cellarsList.find((x) => x.email === String(body.email).toLowerCase())
+      if (!c) { cellarsList.push({ email: String(body.email).toLowerCase(), nome: body.nome || '', slug: body.slug || '', vini: 0, app_abilitata: false }); return send(res, 200, { ok: true }) }
+      if ('app_abilitata' in body) c.app_abilitata = !!body.app_abilitata
+      if ('nome' in body) c.nome = body.nome
+      if ('slug' in body) c.slug = body.slug
+      return send(res, 200, { ok: true, app_abilitata: c.app_abilitata })
+    }
+  }
+  if (p === '/functions/v1/admin-manage') {
+    if (!admins.has(uid)) return send(res, 403, { ok: false, error: 'Solo il Super Admin.' })
+    if (body.action === 'list') return send(res, 200, { ok: true, admins: adminsList })
+    if (body.action === 'add') { adminsList.push({ email: body.email, role: 'admin' }); return send(res, 200, { ok: true }) }
+    if (body.action === 'remove') { adminsList = adminsList.filter((a) => a.email !== body.email); cellarsList = cellarsList.filter((c) => c.email !== body.email); return send(res, 200, { ok: true }) }
   }
   if (p === '/functions/v1/cellar-gaps') {
     if (!admins.has(uid)) return send(res, 403, { ok: false, error: 'Solo l\u2019Admin.' })

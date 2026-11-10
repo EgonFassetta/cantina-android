@@ -603,6 +603,65 @@ if [ -f "$AAPK" ] && curl -s localhost:8787/_state > /dev/null 2>&1; then
   scroll_top
   tap "Chiudi" 20
   expect "di nuovo l'area Admin" "^Collegato come" 30
+
+  echo "-- Bottiglie bevute nel mese (punto 4, come sul sito)"
+  tap "📅 Bottiglie bevute nel mese" 20
+  expect "calendario del mese" "~^bottiglie bevute in " 30
+  shot 31-admin-calendario
+  tap "~^bottiglie bevute in " 20
+  expect "elenco delle bevute del mese" "Bianco Esaurito" 30
+  tap "Bianco Esaurito" 20
+  expect_s "dal calendario si apre la scheda della bottiglia bevuta" "^Aperta il " 30
+  tap "Indietro" 15
+  expect "di nuovo l'area Admin" "^Collegato come" 30
+
+  echo "-- Impostazioni (punto 10, come sul sito)"
+  tap "⚙️ Impostazioni" 20
+  expect "impostazioni" "Titolo del sito" 30
+  type_into "Email a cui arrivano le richieste" "sbagliata"
+  tap "Salva" 20
+  expect_s "email sbagliata rifiutata" "Inserisci un indirizzo email valido." 20
+  scroll_top
+  type_into "Titolo del sito" "Cantina di prova"
+  type_into "Email a cui arrivano le richieste" "ordini@prova.test"
+  type_into "Richieste massime all'ora per ogni visitatore" "7"
+  tap "Salva" 20
+  expect_s "impostazioni salvate" "Impostazioni salvate." 30
+  fake_check "impostazioni sul server" "s['settings'].get('site_title')=='Cantina di prova' and s['settings'].get('admin_notification_email')=='ordini@prova.test' and s['settings'].get('request_limit_per_hour')=='7'"
+  shot 32-admin-impostazioni
+  tap "Cantina pubblica (interruttore)" 20
+  expect_s "cantina resa privata" "^Privata: la vedi solo tu" 30
+  fake_check "cantina privata sul server" "s['cellarPublic']==False"
+  tap "Cantina pubblica (interruttore)" 20
+  expect_s "cantina di nuovo pubblica" "^Pubblica: compare nella scelta" 30
+  fake_check "cantina pubblica sul server" "s['cellarPublic']==True"
+
+  echo "-- Amministratori (punto 11, Super Admin, come sul sito)"
+  expect_s "elenco amministratori con le cantine" "^Cantina «Cantina di Marco»" 30
+  tap "Visibile nell'app: marco@prova.test" 20
+  sleep 2
+  fake_check "cantina di Marco visibile nell'app" "any(c['email']=='marco@prova.test' and c['app_abilitata'] for c in s['cellarsList'])"
+  type_into "Email del nuovo amministratore" "nuovo@prova.test"
+  type_into "Password (almeno 12 caratteri)" "corta"
+  tap "Aggiungi amministratore" 20
+  expect_s "password corta rifiutata" "La password deve avere almeno 12 caratteri." 20
+  type_into "Password (almeno 12 caratteri)" "unapasswordlunga"
+  type_into "Nome della cantina (facoltativo)" "Cantina Nuova"
+  type_into "Indirizzo della cantina (facoltativo)" "nuova"
+  tap "Aggiungi amministratore" 20
+  sleep 2
+  fake_check "nuovo amministratore e cantina sul server" "any(a['email']=='nuovo@prova.test' for a in s['adminsList']) and any(c['slug']=='nuova' and c['nome']=='Cantina Nuova' for c in s['cellarsList'])"
+  scroll_top
+  expect_s "nuovo amministratore in elenco" "nuovo@prova.test" 30
+  shot 33-admin-amministratori
+  scroll_top
+  tap "Rimuovi" 20
+  tap "Sì, rimuovi" 20
+  sleep 2
+  fake_check "amministratore rimosso" "not any(a['email']=='marco@prova.test' for a in s['adminsList'])"
+  scroll_top
+  tap "Chiudi" 20
+  expect "di nuovo l'area Admin" "^Collegato come" 30
   tap "Esci dall'area Admin" 15
   expect "uscito dall'area Admin" "Accesso riservato all'amministratore. Inserisci la password." 30
   tap "Catalogo" 15

@@ -8,7 +8,17 @@ object AdminFeature {
     const val enabled = true
 
     @Composable
-    fun Screen(onSessionChanged: () -> Unit, onCatalogChanged: () -> Unit, cellar: String, wines: List<Wine> = emptyList()) {
-        AdminRoot(onSessionChanged = onSessionChanged, onCatalogChanged = onCatalogChanged, cellar = cellar, wines = wines)
+    fun Screen(
+        onSessionChanged: () -> Unit,
+        onCatalogChanged: () -> Unit,
+        cellar: String,
+        wines: List<Wine> = emptyList(),
+        cellarName: String = "",
+        onOpenWine: (String) -> Unit = {},
+    ) {
+        AdminRoot(
+            onSessionChanged = onSessionChanged, onCatalogChanged = onCatalogChanged, cellar = cellar, wines = wines,
+            cellarName = cellarName, onOpenWine = onOpenWine,
+        )
     }
 }
