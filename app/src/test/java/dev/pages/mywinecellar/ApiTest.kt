@@ -228,4 +228,50 @@ class ApiTest {
         assertEquals("a@b.it", api.session?.email)
         assertEquals("AT9", store.load()?.accessToken)
     }
+
+    // ---------------------------------------------------------------- scelta della cantina
+
+    @Test
+    fun cataloghiLettiConLaSessioneSoloSeRichiesto() = runTest {
+        api = newApi(logged)
+        server.enqueue(MockResponse().setBody("[]"))
+        server.enqueue(MockResponse().setBody("[]"))
+        api.fetchWinesJson("egon")
+        val pubblico = server.takeRequest()
+        assertNull(pubblico.getHeader("Authorization"))
+        assertTrue(pubblico.path!!.contains("tenant=eq.egon"))
+        api.fetchWinesJson("privata", withSession = true)
+        val admin = server.takeRequest()
+        assertEquals("Bearer AT1", admin.getHeader("Authorization"))
+        assertTrue(admin.path!!.contains("tenant=eq.privata"))
+    }
+
+    @Test
+    fun contaLeEtichettePerCantina() = runTest {
+        api = newApi()
+        server.enqueue(MockResponse().setBody("""[{"tenant":"egon"},{"tenant":"egon"},{"tenant":"marco"},{"tenant":null}]"""))
+        assertEquals(mapOf("egon" to 2, "marco" to 1), api.fetchCellarCounts())
+        assertTrue(server.takeRequest().path!!.startsWith("/rest/v1/wines?select=tenant"))
+    }
+
+    @Test
+    fun vistaPubblicaMancanteRestituisceNull() = runTest {
+        api = newApi()
+        server.enqueue(MockResponse().setResponseCode(404).setBody("""{"message":"relation does not exist"}"""))
+        assertNull(api.fetchPublicCellars())
+        server.enqueue(MockResponse().setBody("""[{"slug":"egon","nome":"La cantina di Egon"},{"slug":"","nome":"x"}]"""))
+        assertEquals(listOf(dev.pages.mywinecellar.data.Cellar("egon", "La cantina di Egon")), api.fetchPublicCellars())
+    }
+
+    @Test
+    fun cantinaDellAdminDaAdminUsersOppurePrincipale() = runTest {
+        api = newApi(logged)
+        server.enqueue(MockResponse().setBody("""[{"cantina_slug":"Marco","cantina_nome":"Cantina di Marco"}]"""))
+        assertEquals(dev.pages.mywinecellar.data.Cellar("marco", "Cantina di Marco"), api.fetchAdminCellar("Marco@Esempio.it"))
+        assertTrue(server.takeRequest().path!!.contains("email=eq.marco%40esempio.it"))
+        server.enqueue(MockResponse().setBody("[]"))
+        assertEquals(dev.pages.mywinecellar.data.Cellar("egon", ""), api.fetchAdminCellar("admin.winecellar@aol.it"))
+        server.enqueue(MockResponse().setBody("[]"))
+        assertNull(api.fetchAdminCellar("nessuno@esempio.it"))
+    }
 }

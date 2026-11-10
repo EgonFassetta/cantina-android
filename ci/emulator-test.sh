@@ -107,9 +107,27 @@ adb install -r "$APK" 2>&1 | tee ci-results/install.log
 adb logcat -c
 adb shell am start -W -n $PKG/$ACT 2>&1 | tee ci-results/start.log
 
+echo "== 0) Scelta della cantina (prima apertura, come la prima pagina del sito)"
+expect "schermata «Scegli una cantina»" "Scegli una cantina" 120
+expect "elenco delle cantine pubbliche con il pulsante Entra" "Entra →" 60
+expect "contatore delle etichette" "~^[0-9]+ etichett[ae]$" 30
+shot 00-scelta-cantina
+tap "Entra →" 20
+
 echo "== 1) Catalogo"
 expect "catalogo caricato dal database" "Disponibile|Non disponibile" 120
+expect "nome della cantina e «Cambia cantina»" "Cambia cantina" 30
 shot 01-home
+
+echo "== 1b) Cambia cantina"
+tap "Cambia cantina" 20
+expect "di nuovo la scelta, con la cantina attuale evidenziata" "Cantina attuale" 60
+shot 01b-cambia-cantina
+adb shell input keyevent KEYCODE_BACK; sleep 2
+expect "indietro: si torna alla stessa cantina" "Cambia cantina" 30
+tap "Cambia cantina" 20
+tap "Entra →" 20
+expect "rientro nella cantina scelta" "Disponibile|Non disponibile" 60
 
 echo "== 2) Scheda del vino e preferito (come ospite)"
 tap "Non disponibile" 20 || tap "Disponibile" 20
@@ -318,6 +336,8 @@ if [ -f "$FAPK" ] && curl -s localhost:8787/_state > /dev/null 2>&1; then
   adb shell pm clear $FPKG > /dev/null 2>&1
   curl -s -X POST localhost:8787/_mode -d '{"mode":"code"}' > /dev/null
   adb shell am start -W -n $FPKG/$ACT > /dev/null 2>&1
+  expect "scelta della cantina (server simulato)" "Entra →" 60
+  tap "Entra →" 20
   expect "catalogo dal server simulato" "Disponibile|Non disponibile" 60
 
   echo "-- bottiglie riservate per le serate (come sul sito)"
@@ -430,7 +450,8 @@ if [ -f "$AAPK" ] && curl -s localhost:8787/_state > /dev/null 2>&1; then
   adb install -r "$AAPK" 2>&1 | tail -1
   adb shell pm clear $APKG > /dev/null 2>&1
   adb shell am start -W -n $APKG/$ACT > /dev/null 2>&1
-  expect "catalogo (edizione Admin)" "Disponibile|Non disponibile|Riservata" 90
+  # L'Admin accede direttamente dalla schermata di scelta, senza scegliere una cantina.
+  expect "scelta della cantina prima dell'accesso Admin" "Scegli una cantina" 90
   tap "Cantina" 15
   tap "Area amministratore" 15
   expect "schermata di accesso Admin" "Area Admin" 30
@@ -470,11 +491,15 @@ if [ -f "$AAPK" ] && curl -s localhost:8787/_state > /dev/null 2>&1; then
   fake_check "il server ha aggiunto le bottiglie alla riga esistente" "any(x['modo']=='aggiungi' and x['wineId']=='w1' for x in s['labelSaves'])"
   tap "Chiudi" 15
   tap "Catalogo" 15
+  expect "l'Admin vede la propria cantina (senza «Cambia cantina»)" "La tua cantina (Admin)" 60
   expect "il nuovo vino compare nel catalogo" "Nuovo Vino" 60
+  shot 25-admin-catalogo
   tap "Cantina" 15
   tap "Area amministratore" 15
   tap "Esci dall'area Admin" 15
   expect "uscito dall'area Admin" "Accesso riservato all'amministratore. Inserisci la password." 30
+  tap "Catalogo" 15
+  expect "dopo l'uscita: stessa cantina (pubblica) e di nuovo «Cambia cantina»" "Cambia cantina" 60
   adb shell am force-stop $APKG
 else
   echo "SALTATO: edizione Admin di prova o server simulato non disponibili"

@@ -6,7 +6,12 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.pages.mywinecellar.data.ApiException
+import dev.pages.mywinecellar.data.AdminPrefs
 import dev.pages.mywinecellar.data.Cellar
+import dev.pages.mywinecellar.data.CellarInfo
+import dev.pages.mywinecellar.data.StartDecision
+import dev.pages.mywinecellar.data.decideStart
+import dev.pages.mywinecellar.data.visibleCellars
 import dev.pages.mywinecellar.data.DEFAULT_TENANT
 import dev.pages.mywinecellar.data.Backend
 import dev.pages.mywinecellar.data.GroupBy
@@ -62,10 +67,20 @@ data class AppState(
     /** True mentre l'elenco si aggiorna (tirando giù la lista). */
     val refreshing: Boolean = false,
     val codeStep: CodeStep? = null,
-    /** Cantine pubblicate nell'app (elenco da app_cellars). */
-    val cellars: List<Cellar> = emptyList(),
-    /** Cantina mostrata al cliente. */
+    /** Cantine proposte nella scelta: pubbliche e abilitate all'app, con il numero di etichette. */
+    val cellars: List<CellarInfo> = emptyList(),
+    /** Cantina mostrata. */
     val cellar: String = DEFAULT_TENANT,
+    /** True mentre si mostra la schermata «Scegli una cantina» (come la prima pagina del sito). */
+    val choosing: Boolean = false,
+    /** Avviso mostrato sopra l'elenco (per esempio cantina non più disponibile). */
+    val chooserNote: String? = null,
+    /** True se l'elenco delle cantine non si è potuto leggere. */
+    val cellarsError: Boolean = false,
+    /** True mentre l'elenco delle cantine si sta leggendo. */
+    val cellarsLoading: Boolean = false,
+    /** Cantina dell'Admin collegato; null per clienti e ospiti. */
+    val adminCellar: Cellar? = null,
     /** Criterio di raggruppamento del catalogo. */
     val groupBy: GroupBy = GroupBy.CANTINA,
     /** Allegati già letti, per id del vino. */
@@ -78,6 +93,17 @@ data class AppState(
     val regioni: List<String> get() = distinctValues(wines) { it.regione }
 
     val isGuest: Boolean get() = email == null
+
+    /** True quando è collegato un Admin: vede la propria cantina e non può cambiarla (come sul sito). */
+    val isAdminMode: Boolean get() = adminCellar != null
+
+    /** Nome della cantina mostrata, se noto. */
+    val cellarName: String?
+        get() = adminCellar?.takeIf { it.slug == cellar }?.nome?.takeIf { it.isNotBlank() }
+            ?: cellars.firstOrNull { it.slug == cellar }?.nome
+
+    /** Dalla scelta si può tornare indietro solo se una cantina è già aperta. */
+    val canCloseChooser: Boolean get() = choosing && !isAdminMode && wines.isNotEmpty()
     val visible: List<Wine>
         get() = sortWines(
             filterWines(wines, query, onlyAvailable, colore, caratteristica, tipoVino, regione),
@@ -118,10 +144,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val messages: SharedFlow<String> = _messages.asSharedFlow()
 
     init {
-        viewModelScope.launch {
-            loadCellars()
-            load()
-        }
+        viewModelScope.launch { start() }
     }
 
     fun setGroupBy(g: GroupBy) = _state.update { it.copy(groupBy = g) }
@@ -135,53 +158,120 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Elenco delle cantine: se non si legge, resta la cantina corrente (come prima). */
-    private suspend fun loadCellars() {
-        try {
-            val list = api.fetchCellars()
-            if (list.isNotEmpty()) {
-                val cur = _state.value.cellar
-                val cur2 = if (list.any { it.slug == cur }) cur else list.first().slug
-                _state.update { it.copy(cellars = list, cellar = cur2) }
-            }
-        } catch (e: Exception) { /* nessun selettore: si usa la cantina salvata */ }
+    // ------------------------------------------------------------ scelta della cantina (come sul sito)
+
+    /** All'apertura: cantina dell'Admin, ultima cantina scelta oppure schermata di scelta. */
+    private suspend fun start() {
+        val admin = resolveAdminCellar()
+        _state.update { it.copy(adminCellar = admin) }
+        val list = loadCellarList()
+        applyDecision(decideStart(prefs.getString("cellar", null), admin, list))
     }
 
-    /** Cambia cantina: svuota il carrello (il server non accetta carrelli misti) e ricarica il catalogo. */
-    fun selectCellar(slug: String) {
-        if (slug == _state.value.cellar) return
-        prefs.edit().putString("cellar", slug).apply()
-        viewModelScope.launch {
-            runCatching { api.clearCart() }
-            _state.update { it.copy(cellar = slug, cart = emptyMap(), wines = emptyList()) }
-            load()
+    /** Cantine pubbliche e abilitate all'app, con il numero di etichette. Null se l'elenco non si legge. */
+    private suspend fun loadCellarList(): List<CellarInfo>? {
+        _state.update { it.copy(cellarsLoading = true) }
+        val result = try {
+            val appCellars = api.fetchCellars()
+            val publicCellars = api.fetchPublicCellars()
+            val counts = runCatching { api.fetchCellarCounts() }.getOrDefault(emptyMap())
+            visibleCellars(appCellars, publicCellars, counts)
+        } catch (e: Exception) {
+            null
+        }
+        _state.update { it.copy(cellarsLoading = false, cellarsError = result == null, cellars = result ?: it.cellars) }
+        return result
+    }
+
+    /** Cantina dell'Admin collegato (salvata all'accesso, oppure letta dal server come fa il sito). */
+    private suspend fun resolveAdminCellar(): Cellar? {
+        val ctx = getApplication<Application>()
+        if (AdminPrefs.role(ctx) == null) return null
+        val email = api.session?.email ?: return null
+        AdminPrefs.cellar(ctx)?.let { return it }
+        val found = runCatching { api.fetchAdminCellar(email) }.getOrNull() ?: return null
+        AdminPrefs.saveCellar(ctx, found)
+        return found
+    }
+
+    private suspend fun applyDecision(d: StartDecision) {
+        when (d) {
+            is StartDecision.Open -> {
+                if (d.slug != _state.value.cellar) {
+                    _state.update { it.copy(cellar = d.slug, wines = emptyList(), cart = emptyMap()) }
+                }
+                _state.update { it.copy(choosing = false, chooserNote = null) }
+                loadNow()
+            }
+            is StartDecision.Choose -> {
+                _state.update { it.copy(choosing = true, chooserNote = d.note, loading = false, error = null) }
+                refreshUserData()
+            }
         }
     }
+
+    /** «Cambia cantina»: torna alla scelta (non per l'Admin, che resta nella propria cantina). */
+    fun openChooser() {
+        if (_state.value.isAdminMode) return
+        _state.update { it.copy(choosing = true, chooserNote = null) }
+        viewModelScope.launch { loadCellarList() }
+    }
+
+    /** Torna alla cantina già aperta senza cambiarla. */
+    fun closeChooser() {
+        if (_state.value.canCloseChooser) _state.update { it.copy(choosing = false, chooserNote = null) }
+    }
+
+    /** Rilegge l'elenco delle cantine (pulsante «Riprova»). */
+    fun retryCellars() {
+        viewModelScope.launch { loadCellarList() }
+    }
+
+    /** Entra nella cantina scelta. Se cambia cantina il carrello si svuota (il server non accetta carrelli misti). */
+    fun chooseCellar(slug: String) {
+        prefs.edit().putString("cellar", slug).apply()
+        viewModelScope.launch {
+            val st = _state.value
+            val changed = slug != st.cellar
+            if (changed) {
+                if (st.cart.isNotEmpty()) runCatching { api.clearCart() }
+                _state.update { it.copy(cellar = slug, cart = emptyMap(), wines = emptyList()) }
+            }
+            val needsLoad = changed || _state.value.wines.isEmpty()
+            _state.update { it.copy(choosing = false, chooserNote = null, loading = needsLoad || it.loading) }
+            if (needsLoad) loadNow()
+        }
+    }
+
+    /** La cantina mostrata è quella dell'Admin collegato: si legge con la sua sessione (anche se privata). */
+    private fun readsAsAdmin(slug: String): Boolean = _state.value.adminCellar?.slug == slug
 
     private fun say(text: String) {
         _messages.tryEmit(text)
     }
 
     fun load() {
-        viewModelScope.launch {
-            _state.update { it.copy(loading = true, error = null) }
-            try {
-                val cur = _state.value.cellar
-                val json = api.fetchWinesJson(cur)
-                val wines = parseWines(json)
-                cacheFor(cur).save(json)
-                _state.update { it.copy(loading = false, wines = wines, offline = false) }
-            } catch (e: Exception) {
-                val saved = cacheFor(_state.value.cellar).load()
-                if (saved != null) {
-                    _state.update { it.copy(loading = false, wines = saved, offline = true) }
-                } else {
-                    _state.update { it.copy(loading = false, error = friendlyError(e)) }
-                    return@launch
-                }
+        viewModelScope.launch { loadNow() }
+    }
+
+    private suspend fun loadNow() {
+        _state.update { it.copy(loading = true, error = null) }
+        try {
+            val cur = _state.value.cellar
+            val json = api.fetchWinesJson(cur, withSession = readsAsAdmin(cur))
+            val wines = parseWines(json)
+            cacheFor(cur).save(json)
+            _state.update { it.copy(loading = false, wines = wines, offline = false) }
+        } catch (e: Exception) {
+            val saved = cacheFor(_state.value.cellar).load()
+            if (saved != null) {
+                _state.update { it.copy(loading = false, wines = saved, offline = true) }
+            } else {
+                _state.update { it.copy(loading = false, error = friendlyError(e)) }
+                return
             }
-            refreshUserData()
         }
+        refreshUserData()
     }
 
     /** Aggiorna il catalogo senza far sparire l'elenco già mostrato. */
@@ -190,7 +280,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             _state.update { it.copy(refreshing = true) }
             try {
                 val cur = _state.value.cellar
-                val json = api.fetchWinesJson(cur)
+                val json = api.fetchWinesJson(cur, withSession = readsAsAdmin(cur))
                 val wines = parseWines(json)
                 cacheFor(cur).save(json)
                 _state.update { it.copy(wines = wines, offline = false) }
@@ -225,7 +315,21 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun reloadSession() {
         viewModelScope.launch {
             _state.update { it.copy(email = null, favorites = emptySet(), cart = emptyMap()) }
-            refreshUserData()
+            val before = _state.value.adminCellar
+            val admin = resolveAdminCellar()
+            _state.update { it.copy(adminCellar = admin) }
+            when {
+                // Accesso Admin: come sul sito si passa alla propria cantina.
+                admin != null -> applyDecision(StartDecision.Open(admin.slug, asAdmin = true))
+                // Uscita dall'Admin: si resta nella stessa cantina se è pubblica, altrimenti si torna alla scelta.
+                before != null -> {
+                    val list = loadCellarList()
+                    val d = decideStart(_state.value.cellar, null, list)
+                    if (d is StartDecision.Open) prefs.edit().putString("cellar", d.slug).apply()
+                    applyDecision(if (d is StartDecision.Choose) StartDecision.Choose(null) else d)
+                }
+                else -> refreshUserData()
+            }
         }
     }
 

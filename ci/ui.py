@@ -2,6 +2,7 @@
 """Piccolo aiuto per leggere lo schermo dell'emulatore (file XML di uiautomator).
 
   ui.py has  FILE "testo1|testo2"   -> esce con 0 se compare uno dei testi (o una descrizione)
+                                     ("^inizio" = inizia con; "~regex" = espressione regolare)
   ui.py tap  FILE "testo"           -> stampa "x y" del centro del primo elemento con quel testo
 """
 import re
@@ -17,6 +18,10 @@ def load(path):
 
 
 def matches(node, wanted):
+    # "~espressione" = il testo dell'elemento corrisponde all'espressione regolare
+    if wanted.startswith("~"):
+        rx = re.compile(wanted[1:])
+        return bool(rx.search(node.get("text") or "") or rx.search(node.get("content-desc") or ""))
     # "^testo" = il testo dell'elemento inizia con "testo"
     if wanted.startswith("^"):
         pre = wanted[1:]

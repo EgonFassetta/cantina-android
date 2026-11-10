@@ -2,6 +2,7 @@ package dev.pages.mywinecellar.admin
 
 import dev.pages.mywinecellar.data.ApiException
 import dev.pages.mywinecellar.data.AuthSession
+import dev.pages.mywinecellar.data.Cellar
 import dev.pages.mywinecellar.data.SupabaseApi
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonArray
@@ -96,8 +97,18 @@ internal fun labelFieldsToJson(f: LabelFields): JsonObject = buildJsonObject {
     put("dolcezza", f.dolcezza); put("sito_produttore", f.sitoProduttore)
 }
 
-/** Accesso amministratore con la sola password (come sul sito): il server capisce da solo chi è. Restituisce il ruolo. */
-suspend fun SupabaseApi.adminLogin(password: String): String {
+/** Esito dell'accesso Admin: ruolo e, se il server la indica, la cantina dell'Admin. */
+data class AdminLoginResult(val role: String, val cellar: Cellar?)
+
+/** La cantina restituita da admin-login (campo «cantina»: slug e nome), come la legge il sito. */
+internal fun parseLoginCellar(obj: JsonObject): Cellar? {
+    val c = obj["cantina"] as? JsonObject ?: return null
+    val slug = c.text("slug").lowercase()
+    return if (slug.isEmpty()) null else Cellar(slug, c.text("nome"))
+}
+
+/** Accesso amministratore con la sola password (come sul sito): il server capisce da solo chi è. */
+suspend fun SupabaseApi.adminLogin(password: String): AdminLoginResult {
     val body = buildJsonObject { put("password", password) }
     val r = send { token ->
         Request.Builder()
@@ -119,7 +130,7 @@ suspend fun SupabaseApi.adminLogin(password: String): String {
     if (access.isEmpty() || refresh.isEmpty()) throw ApiException("Accesso non riuscito.")
     mutex.withLock { saveSession(AuthSession(access, refresh, null)) }
     refreshSession() // completa la sessione con i dati dell'utente
-    return obj.text("role").ifEmpty { "admin" }
+    return AdminLoginResult(obj.text("role").ifEmpty { "admin" }, parseLoginCellar(obj))
 }
 
 /** Legge la foto (o le due foto) dell'etichetta con la funzione "label-reader" del sito. */

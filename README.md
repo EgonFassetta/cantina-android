@@ -6,12 +6,13 @@ https://mywinecellar.pages.dev/ e rispetta le stesse regole di sicurezza: l'app 
 Identificativo dell'app: `mywine.cellar`.
 
 ## Funzioni
-Catalogo con ricerca, filtri (colore, caratteristica, tipo vino, regione) e ordinamento · scheda del vino con profilo ·
+Scelta della cantina all'apertura (solo cantine pubbliche e abilitate all'app, con il numero di etichette; poi
+«Cambia cantina»), come la prima pagina del sito · catalogo con ricerca, filtri (colore, caratteristica, tipo vino, regione) e ordinamento · scheda del vino con profilo ·
 preferiti · carrello e richiesta · richiesta di disponibilità · assistenza · accesso con email ("Salva la tua cantina") ·
 uscita dal dispositivo · eliminazione dell'account · apertura anche senza connessione (ultimo catalogo salvato) ·
 aggiornamento tirando giù la lista · gruppi per cantina · altri vini della stessa cantina · condivisione · foto ingrandibile ·
 tema chiaro e scuro (segue il telefono) · testo ingrandibile · adattamento ai tablet.
-L'area di amministrazione resta sul sito.
+Area Admin con password (dalla schermata Cantina): l'Admin entra nella propria cantina, anche se privata.
 
 ## Come viene provata (GitHub Actions)
 A ogni modifica il flusso `Android CI`:

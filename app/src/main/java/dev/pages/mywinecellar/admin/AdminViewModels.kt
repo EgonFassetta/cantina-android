@@ -5,6 +5,8 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import dev.pages.mywinecellar.data.AdminPrefs
+import dev.pages.mywinecellar.data.ApiException
 import dev.pages.mywinecellar.data.Backend
 import dev.pages.mywinecellar.ui.friendlyError
 import kotlinx.coroutines.Dispatchers
@@ -25,7 +27,6 @@ data class AdminState(
 )
 
 class AdminViewModel(app: Application) : AndroidViewModel(app) {
-    private val prefs = app.getSharedPreferences("admin", Context.MODE_PRIVATE)
     private val api = Backend.api(app)
 
     private val _state = MutableStateFlow(AdminState())
@@ -34,9 +35,9 @@ class AdminViewModel(app: Application) : AndroidViewModel(app) {
     init {
         // Il ruolo salvato vale solo se la sessione dell'app è ancora quella di un account con email.
         val email = api.session?.email
-        val role = prefs.getString("role", null)
+        val role = AdminPrefs.role(app)
         if (email != null && role != null) _state.value = AdminState(role = role, email = email)
-        else prefs.edit().remove("role").apply()
+        else AdminPrefs.clear(app)
     }
 
     fun login(password: String, onSessionChanged: () -> Unit) {
@@ -47,9 +48,18 @@ class AdminViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _state.update { it.copy(busy = true, error = null) }
             try {
-                val role = api.adminLogin(password)
-                prefs.edit().putString("role", role).apply()
-                _state.value = AdminState(role = role, email = api.session?.email)
+                val res = api.adminLogin(password)
+                val email = api.session?.email
+                // Come sul sito: l'Admin entra nella propria cantina; senza cantina assegnata l'accesso non vale.
+                val cellar = res.cellar ?: email?.let { api.fetchAdminCellar(it) }
+                if (cellar == null) {
+                    runCatching { api.signOutDevice() }
+                    AdminPrefs.clear(getApplication<Application>())
+                    onSessionChanged()
+                    throw ApiException("Al tuo account non è ancora assegnata una cantina: chiedilo al Super Admin.")
+                }
+                AdminPrefs.save(getApplication<Application>(), res.role, cellar)
+                _state.value = AdminState(role = res.role, email = email)
                 onSessionChanged()
             } catch (e: Exception) {
                 _state.update { it.copy(busy = false, error = friendlyError(e)) }
@@ -64,7 +74,7 @@ class AdminViewModel(app: Application) : AndroidViewModel(app) {
                 api.signOutDevice()
             } catch (_: Exception) {
             }
-            prefs.edit().remove("role").apply()
+            AdminPrefs.clear(getApplication<Application>())
             _state.value = AdminState()
             onSessionChanged()
         }

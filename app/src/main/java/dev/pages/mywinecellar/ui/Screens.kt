@@ -131,13 +131,17 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
     val selected = state.wines.firstOrNull { it.id == selectedId }
     BackHandler(enabled = selected != null) { selectedId = null }
     BackHandler(enabled = selected == null && tab != 0) { tab = 0 }
+    // Dalla scelta della cantina si torna alla cantina già aperta (se c'è).
+    BackHandler(enabled = selected == null && tab == 0 && state.canCloseChooser) { vm.closeChooser() }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = selected?.titolo ?: "La Cantina di Egon",
+                        text = selected?.titolo
+                            ?: (if (state.choosing) null else state.cellarName)
+                            ?: "La Cantina di Egon",
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -271,12 +275,17 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                         onPrivacy = { uriHandler.openUri(PRIVACY_URL) },
                         onOpenAdmin = { tab = 5; selectedId = null },
                     )
+                    state.choosing -> CellarChooserScreen(
+                        state = state,
+                        onChoose = vm::chooseCellar,
+                        onRetry = vm::retryCellars,
+                    )
                     state.loading -> LoadingView()
                     state.error != null -> ErrorView(state.error ?: "", onRetry = vm::load)
                     tab == 0 -> CatalogScreen(
                         vm = vm,
                         state = state,
-                        onSelectCellar = vm::selectCellar,
+                        onChangeCellar = vm::openChooser,
                         onQuery = vm::setQuery,
                         onOnlyAvailable = vm::setOnlyAvailable,
                         onOpenFilters = { showFilters = true },
@@ -431,7 +440,7 @@ fun ErrorView(message: String, onRetry: () -> Unit) {
 private fun CatalogScreen(
     vm: AppViewModel,
     state: AppState,
-    onSelectCellar: (String) -> Unit,
+    onChangeCellar: () -> Unit,
     onQuery: (String) -> Unit,
     onOnlyAvailable: (Boolean) -> Unit,
     onOpenFilters: () -> Unit,
@@ -441,45 +450,33 @@ private fun CatalogScreen(
 ) {
     val visible = state.visible
     val focus = LocalFocusManager.current
-    var pendingCellar by remember { mutableStateOf<String?>(null) }
     var showDish by remember { mutableStateOf(false) }
     var showEvening by remember { mutableStateOf(false) }
     if (showDish) DishPairingDialog(vm, state.wines, onOpen) { showDish = false }
     if (showEvening) EveningDialog(vm) { showEvening = false }
     Column(Modifier.fillMaxSize()) {
+        // Cantina mostrata e «Cambia cantina» (come sul sito: solo per clienti e ospiti, non per l'Admin).
+        Row(
+            Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "🍷 " + (state.cellarName ?: "Cantina"),
+                fontWeight = FontWeight.SemiBold, color = Accent, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            if (state.isAdminMode) {
+                Text("La tua cantina (Admin)", color = InkSoft, fontSize = 13.sp, modifier = Modifier.padding(end = 8.dp))
+            } else {
+                TextButton(onClick = onChangeCellar) { Text("Cambia cantina", color = WineBright, fontWeight = FontWeight.SemiBold) }
+            }
+        }
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             TextButton(onClick = { showDish = true }) { Text("Abbina a un piatto") }
             TextButton(onClick = { showEvening = true }) { Text("Pianifica una serata") }
-        }
-        if (state.cellars.size > 1) {
-            Row(
-                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                state.cellars.forEach { c ->
-                    FilterChip(
-                        selected = c.slug == state.cellar,
-                        onClick = {
-                            if (c.slug != state.cellar) {
-                                if (state.cart.isEmpty()) onSelectCellar(c.slug) else pendingCellar = c.slug
-                            }
-                        },
-                        label = { Text(c.nome) },
-                    )
-                }
-            }
-        }
-        pendingCellar?.let { target ->
-            AlertDialog(
-                onDismissRequest = { pendingCellar = null },
-                title = { Text("Cambiare cantina?") },
-                text = { Text("Il carrello verrà svuotato.") },
-                confirmButton = { TextButton(onClick = { onSelectCellar(target); pendingCellar = null }) { Text("Cambia") } },
-                dismissButton = { TextButton(onClick = { pendingCellar = null }) { Text("Annulla") } },
-            )
         }
         OutlinedTextField(
             value = state.query,

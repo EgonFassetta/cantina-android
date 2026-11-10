@@ -13,7 +13,7 @@ private fun csvCell(v: String): String = "\"" + v.replace("\"", "\"\"") + "\""
 
 /** Esporta in CSV (sola lettura) i vini della cantina indicata e apre la condivisione. */
 suspend fun exportCsv(context: Context, cellar: String) {
-    val json = Backend.api(context).fetchWinesJson(cellar)
+    val json = Backend.api(context).fetchWinesJson(cellar, withSession = true)
     val wines = parseWines(json)
     val header = listOf("Cantina", "Nome", "Annata", "Tipologia", "Colore", "Caratteristica", "Regione", "Paese", "Formato", "Quantita", "Prezzo", "Posizione")
     val rows = wines.map { w ->

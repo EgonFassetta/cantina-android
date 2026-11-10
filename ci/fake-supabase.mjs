@@ -68,8 +68,14 @@ http.createServer(async (req, res) => {
       return send(res, 200, [{ id }])
     }
     const offset = parseInt(q(u, 'offset') || '0', 10)
+    // conteggio delle etichette per la scelta della cantina (select=tenant)
+    if (q(u, 'select') === 'tenant') return send(res, 200, offset === 0 ? WINES.map(() => ({ tenant: 'egon' })) : [])
     return send(res, 200, offset === 0 ? WINES : [])
   }
+
+  // ---- cantine (lettura pubblica, come sul server vero): pubbliche (cellars) e abilitate all'app (app_cellars)
+  if (p === '/rest/v1/app_cellars') return send(res, 200, [{ slug: 'egon', nome: 'La cantina di Egon' }])
+  if (p === '/rest/v1/cellars') return send(res, 200, [{ slug: 'egon', nome: 'La cantina di Egon' }])
 
   // ---- sessione
   if (p === '/auth/v1/signup') {
@@ -89,8 +95,10 @@ http.createServer(async (req, res) => {
   if (!uid) return send(res, 401, { message: 'JWT expired' })
 
   // bottiglie riservate per le serate: il vino w3 (2 bottiglie) è tutto riservato
-  if (p === '/rest/v1/app_cellars') return send(res, 200, [{ slug: 'egon', nome: 'La cantina di Egon' }])
   if (p === '/rest/v1/rpc/reserved_quantities') return send(res, 200, [{ wine_id: 'w3', riservate: 2 }])
+
+  // cantina dell'Admin (come la legge il sito)
+  if (p === '/rest/v1/admin_users') return send(res, 200, admins.has(uid) ? [{ cantina_slug: 'egon', cantina_nome: 'La cantina di Egon' }] : [])
 
   if (p === '/rest/v1/wine_user_state') {
     const wine = eqVal(q(u, 'wine_id'))
@@ -131,7 +139,7 @@ http.createServer(async (req, res) => {
     const adminUser = { id: 'admin-user', email: 'admin@prova.test', is_anonymous: false }
     users.set(adminUser.id, adminUser); admins.add(adminUser.id)
     const s = newSession(adminUser)
-    return send(res, 200, { ok: true, role: 'super_admin', email: adminUser.email, session: { access_token: s.access_token, refresh_token: s.refresh_token } })
+    return send(res, 200, { ok: true, role: 'super_admin', email: adminUser.email, cantina: { slug: 'egon', nome: 'La cantina di Egon' }, session: { access_token: s.access_token, refresh_token: s.refresh_token } })
   }
   if (p === '/functions/v1/label-reader') {
     if (!admins.has(uid)) return send(res, 403, { ok: false, error: 'Accesso negato: solo l\u2019amministratore.' })

@@ -77,48 +77,89 @@ class SupabaseApi(
     }
 
     /** Cantine abilitate per l'app (vista app_cellars: solo slug e nome, lettura pubblica). */
-    suspend fun fetchCellars(): List<Cellar> = withContext(Dispatchers.IO) {
-        val request = Request.Builder()
-            .url("$baseUrl/rest/v1/app_cellars?select=slug,nome&order=nome.asc")
-            .header("apikey", apiKey)
-            .header("Accept", "application/json")
-            .build()
-        http.newCall(request).execute().use { response ->
-            val body = response.body?.string().orEmpty()
-            if (!response.isSuccessful) throw ApiException("Elenco cantine non disponibile (${response.code})", response.code)
-            val rows = (json.parseToJsonElement(body) as? JsonArray) ?: JsonArray(emptyList())
-            rows.mapNotNull { el ->
-                val o = el as? JsonObject ?: return@mapNotNull null
-                val slug = o["slug"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-                Cellar(slug = slug, nome = o["nome"]?.jsonPrimitive?.contentOrNull ?: slug)
-            }
+    suspend fun fetchCellars(): List<Cellar> = fetchCellarView("app_cellars")
+        ?: throw ApiException("Elenco cantine non disponibile.")
+
+    /** Cantine pubbliche (vista cellars, la stessa che usa il sito per la scelta). Null se la vista non si legge. */
+    suspend fun fetchPublicCellars(): List<Cellar>? = runCatching { fetchCellarView("cellars") }.getOrNull()
+
+    private suspend fun fetchCellarView(view: String): List<Cellar>? {
+        val r = publicGet("$view?select=slug,nome&order=nome.asc")
+        if (r.code !in 200..299) return null
+        val rows = (json.parseToJsonElement(r.body) as? JsonArray) ?: JsonArray(emptyList())
+        return rows.mapNotNull { el ->
+            val o = el as? JsonObject ?: return@mapNotNull null
+            val slug = o["slug"]?.jsonPrimitive?.contentOrNull?.trim()?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+            Cellar(slug = slug, nome = o["nome"]?.jsonPrimitive?.contentOrNull?.trim().orEmpty())
         }
     }
 
-    /** Il catalogo in formato JSON grezzo (serve anche per salvarlo nella cache). */
-    suspend fun fetchWinesJson(tenant: String = DEFAULT_TENANT): String = withContext(Dispatchers.IO) {
+    /** Numero di etichette visibili ai visitatori, per cantina (come il contatore della scelta sul sito). */
+    suspend fun fetchCellarCounts(): Map<String, Int> {
+        val counts = mutableMapOf<String, Int>()
+        var offset = 0
+        val pageSize = 1000
+        while (true) {
+            val r = publicGet("wines?select=tenant&order=id.asc&limit=$pageSize&offset=$offset")
+            if (r.code !in 200..299) throw ApiException("Conteggio delle etichette non disponibile (${r.code})", r.code)
+            val rows = (json.parseToJsonElement(r.body) as? JsonArray) ?: JsonArray(emptyList())
+            rows.forEach { el ->
+                val t = (el as? JsonObject)?.get("tenant")?.jsonPrimitive?.contentOrNull ?: return@forEach
+                counts[t] = (counts[t] ?: 0) + 1
+            }
+            if (rows.size < pageSize) break
+            offset += pageSize
+        }
+        return counts
+    }
+
+    /**
+     * Cantina dell'Admin collegato (tabella admin_users, come fa il sito). Per l'amministratore principale, senza
+     * assegnazione esplicita, è la cantina principale. Null se all'account non è assegnata nessuna cantina.
+     */
+    suspend fun fetchAdminCellar(email: String): Cellar? {
+        val mail = email.trim().lowercase()
+        if (mail.isEmpty()) return null
+        val r = runCatching { rest("GET", "admin_users?select=cantina_slug,cantina_nome&email=eq.${enc(mail)}") }.getOrNull()
+        if (r != null && r.code in 200..299) {
+            val o = runCatching { (json.parseToJsonElement(r.body) as? JsonArray)?.firstOrNull() as? JsonObject }.getOrNull()
+            val slug = o?.get("cantina_slug")?.jsonPrimitive?.contentOrNull?.trim()?.lowercase()
+            if (!slug.isNullOrEmpty()) {
+                return Cellar(slug, o?.get("cantina_nome")?.jsonPrimitive?.contentOrNull?.trim().orEmpty())
+            }
+        }
+        return if (mail == ADMIN_EMAIL) Cellar(DEFAULT_TENANT, "") else null
+    }
+
+    /**
+     * Il catalogo in formato JSON grezzo (serve anche per salvarlo nella cache).
+     * Con [withSession] la lettura avviene con la sessione dell'utente: serve all'Admin per vedere la propria
+     * cantina anche quando è privata (stesse regole di sicurezza del sito).
+     */
+    suspend fun fetchWinesJson(tenant: String = DEFAULT_TENANT, withSession: Boolean = false): String {
         val result = mutableListOf<kotlinx.serialization.json.JsonElement>()
         var offset = 0
         val pageSize = 1000
-        var done = false
-        while (!done) {
-            val url = "$baseUrl/rest/v1/wines?select=*&tenant=eq.${enc(tenant)}&order=cantina.asc,nome.asc&limit=$pageSize&offset=$offset"
-            val request = Request.Builder()
-                .url(url)
-                .header("apikey", apiKey)
-                .header("Accept", "application/json")
-                .build()
-            http.newCall(request).execute().use { response ->
-                val body = response.body?.string().orEmpty()
-                if (!response.isSuccessful) {
-                    throw ApiException("Il server ha risposto con errore ${response.code}", response.code)
-                }
-                val rows = (json.parseToJsonElement(body) as? JsonArray) ?: JsonArray(emptyList())
-                result.addAll(rows)
-                if (rows.size < pageSize) done = true else offset += pageSize
-            }
+        while (true) {
+            val path = "wines?select=*&tenant=eq.${enc(tenant)}&order=cantina.asc,nome.asc&limit=$pageSize&offset=$offset"
+            val r = if (withSession) rest("GET", path) else publicGet(path)
+            if (r.code !in 200..299) throw ApiException("Il server ha risposto con errore ${r.code}", r.code)
+            val rows = (json.parseToJsonElement(r.body) as? JsonArray) ?: JsonArray(emptyList())
+            result.addAll(rows)
+            if (rows.size < pageSize) break
+            offset += pageSize
         }
-        JsonArray(result).toString()
+        return JsonArray(result).toString()
+    }
+
+    /** Lettura pubblica (solo chiave pubblica, senza sessione), come un visitatore del sito. */
+    private suspend fun publicGet(path: String): Resp = withContext(Dispatchers.IO) {
+        val request = Request.Builder()
+            .url("$baseUrl/rest/v1/$path")
+            .header("apikey", apiKey)
+            .header("Accept", "application/json")
+            .build()
+        http.newCall(request).execute().use { Resp(it.code, it.body?.string().orEmpty()) }
     }
 
     // ---------------------------------------------------------------- sessione

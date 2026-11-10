@@ -48,4 +48,12 @@ class AdminParsingTest {
         assertEquals("Brut", j["dolcezza"]!!.toString().trim('"'))
         assertEquals(12, j.size)
     }
+
+    @Test
+    fun cantinaRestituitaDallAccessoAdmin() {
+        assertEquals(dev.pages.mywinecellar.data.Cellar("marco", "Cantina di Marco"),
+            parseLoginCellar(obj("""{"ok":true,"role":"admin","cantina":{"slug":"Marco","nome":"Cantina di Marco"}}""")))
+        assertEquals(null, parseLoginCellar(obj("""{"ok":true,"role":"admin"}""")))
+        assertEquals(null, parseLoginCellar(obj("""{"ok":true,"cantina":{"slug":""}}""")))
+    }
 }
