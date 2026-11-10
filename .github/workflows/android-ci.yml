@@ -103,6 +103,8 @@ jobs:
       - name: Prova l'app sull'emulatore
         id: emulator
         if: steps.build.outcome == 'success'
+        # Se il telefono virtuale si blocca la prova si ripete (passi successivi); l'esito finale è controllato in fondo.
+        continue-on-error: true
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -134,7 +136,9 @@ jobs:
 
       - name: Prova l'app sull'emulatore (seconda prova)
         id: emulator2
-        if: steps.restart.outputs.retry == 'true'
+        # always(): senza, GitHub salterebbe questo passo perché il precedente è fallito
+        if: always() && steps.restart.outputs.retry == 'true'
+        continue-on-error: true
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -149,7 +153,7 @@ jobs:
           script: bash ci/emulator-test.sh
 
       - name: Pubblica l'APK di prova (da installare sul telefono)
-        if: steps.emulator.outcome == 'success' || steps.emulator2.outcome == 'success'
+        if: always() && steps.build.outcome == 'success' && (steps.emulator.outcome == 'success' || steps.emulator2.outcome == 'success')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -166,3 +170,15 @@ jobs:
           SIGNING_OUTCOME: ${{ steps.signing_check.outcome }}
           SERVER_TESTS_OUTCOME: ${{ steps.server_tests.outcome }}
         run: bash ci/publish-results.sh
+
+      - name: Esito finale (compilazione e prova sul telefono virtuale)
+        if: always()
+        env:
+          BUILD: ${{ steps.build.outcome }}
+          EMU1: ${{ steps.emulator.outcome }}
+          EMU2: ${{ steps.emulator2.outcome }}
+        run: |
+          echo "compilazione: $BUILD · prova: $EMU1 · seconda prova: ${EMU2:-non eseguita}"
+          if [ "$BUILD" != "success" ]; then echo "Compilazione o test automatici falliti."; exit 1; fi
+          if [ "$EMU1" != "success" ] && [ "$EMU2" != "success" ]; then echo "Prova sul telefono virtuale fallita."; exit 1; fi
+          echo "Tutto superato."
