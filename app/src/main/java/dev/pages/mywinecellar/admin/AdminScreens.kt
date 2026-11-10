@@ -71,10 +71,16 @@ private val isTestBuild: Boolean get() = BuildConfig.SUPABASE_URL.startsWith("ht
 // ------------------------------------------------------------------ area Admin
 
 @Composable
-fun AdminRoot(onSessionChanged: () -> Unit, onCatalogChanged: () -> Unit, cellar: String) {
+fun AdminRoot(
+    onSessionChanged: () -> Unit,
+    onCatalogChanged: () -> Unit,
+    cellar: String,
+    wines: List<dev.pages.mywinecellar.data.Wine> = emptyList(),
+) {
     val vm: AdminViewModel = viewModel()
     val st by vm.state.collectAsState()
     var showLabel by remember { mutableStateOf(false) }
+    var showMessages by remember { mutableStateOf(false) }
     val ctx = androidx.compose.ui.platform.LocalContext.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
 
@@ -83,6 +89,7 @@ fun AdminRoot(onSessionChanged: () -> Unit, onCatalogChanged: () -> Unit, cellar
             busy = st.busy, error = st.error,
             onLogin = { pwd -> vm.login(pwd, onSessionChanged) },
         )
+        showMessages -> MessageCenterScreen(wines = wines, onClose = { showMessages = false })
         showLabel -> LabelFlowScreen(onClose = { changed ->
             showLabel = false
             if (changed) onCatalogChanged()
@@ -90,6 +97,7 @@ fun AdminRoot(onSessionChanged: () -> Unit, onCatalogChanged: () -> Unit, cellar
         else -> AdminHome(
             role = st.role ?: "admin", email = st.email, busy = st.busy,
             onLabel = { showLabel = true },
+            onMessages = { showMessages = true },
             onLogout = { vm.logout(onSessionChanged) },
             onExport = { scope.launch { runCatching { exportCsv(ctx, cellar) } } },
         )
@@ -120,7 +128,15 @@ private fun AdminLogin(busy: Boolean, error: String?, onLogin: (String) -> Unit)
 }
 
 @Composable
-private fun AdminHome(role: String, email: String?, busy: Boolean, onLabel: () -> Unit, onLogout: () -> Unit, onExport: () -> Unit) {
+private fun AdminHome(
+    role: String,
+    email: String?,
+    busy: Boolean,
+    onLabel: () -> Unit,
+    onMessages: () -> Unit,
+    onLogout: () -> Unit,
+    onExport: () -> Unit,
+) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -132,6 +148,7 @@ private fun AdminHome(role: String, email: String?, busy: Boolean, onLabel: () -
         )
         HorizontalDivider(color = Gold)
         Button(modifier = Modifier.fillMaxWidth(), onClick = onLabel) { Text("📷 Aggiungi vino da etichetta") }
+        OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = onMessages) { Text("📬 Centro messaggi") }
         OutlinedButton(enabled = !busy, modifier = Modifier.fillMaxWidth(), onClick = onExport) { Text("📄 Esporta la cantina in CSV") }
         Text(
             "Fotografa l'etichetta: l'app legge i dati e te li fa controllare prima di salvare.",

@@ -547,6 +547,20 @@ if [ -f "$AAPK" ] && curl -s localhost:8787/_state > /dev/null 2>&1; then
   tap "Indietro" 15
   tap "Cantina" 15
   tap "Area amministratore" 15
+
+  echo "-- centro messaggi dell'Admin (come sul sito)"
+  tap "📬 Centro messaggi" 20
+  expect "ordini ricevuti" "Rosso Disponibile x2" 40
+  expect_s "richieste di disponibilità con il vino" "^Bianco Esaurito (Cantina Prova, 2020)" 30
+  expect_s "messaggi di supporto" "Messaggio di prova al supporto" 30
+  shot 28-admin-messaggi
+  scroll_top
+  tap "Elimina" 20
+  tap "Sì, elimina" 20
+  expect "ordine eliminato" "Nessun ordine ricevuto." 40
+  fake_check "il server ha eliminato l'ordine" "len(s['messages']['cart_requests'])==0 and len(s['messages']['support_requests'])==1"
+  tap "Chiudi" 20
+  expect "di nuovo l'area Admin" "^Collegato come" 30
   tap "Esci dall'area Admin" 15
   expect "uscito dall'area Admin" "Accesso riservato all'amministratore. Inserisci la password." 30
   tap "Catalogo" 15

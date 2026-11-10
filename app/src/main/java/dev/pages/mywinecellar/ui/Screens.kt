@@ -273,6 +273,7 @@ fun CantinaApp(vm: AppViewModel = viewModel()) {
                         onSessionChanged = vm::reloadSession,
                         onCatalogChanged = vm::refresh,
                         cellar = state.cellar,
+                        wines = state.wines,
                     )
                     tab == 3 -> AccountScreen(
                         state = state,

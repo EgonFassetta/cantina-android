@@ -18,6 +18,12 @@ const labelSaves = []
 const wineEdits = []       // modifiche delle schede (PATCH su wines)
 const winePrivate = new Map() // wine_id -> prezzo_acquisto
 let attachments = []       // righe di wine_attachments
+// Centro messaggi dell'Admin: una riga di prova per tabella
+const messages = {
+  cart_requests: [{ id: 'o1', creato_il: '2026-11-01T10:00:00Z', totale: 51, items: [{ nome: 'Rosso Disponibile', quantita: 2 }], contatto_email: 'cliente@prova.test', contatto_telefono: '3331234567' }],
+  availability_requests: [{ id: 'a1', creato_il: '2026-11-02T10:00:00Z', wine_id: 'w2', note: 'Ne avete ancora?', contatto_email: 'altro@prova.test', contatto_telefono: '' }],
+  support_requests: [{ id: 's1', creato_il: '2026-11-03T10:00:00Z', messaggio: 'Messaggio di prova al supporto', contatto_email: 'aiuto@prova.test', contatto_telefono: '' }],
+}
 const admins = new Set()   // id utenti con accesso amministratore
 const codes = new Map()     // `${email}|${purpose}` -> code
 let lastCode = null
@@ -58,7 +64,7 @@ http.createServer(async (req, res) => {
   console.log(req.method, p + u.search)
 
   // ---- strumenti per le prove
-  if (p === '/_state') return send(res, 200, { mode, lastCode, requests, uploads, labelSaves, wineEdits, winePrivate: Object.fromEntries(winePrivate), attachments, wineCount: WINES.length, users: [...users.values()], cartSize: cart.size, favorites: [...state.values()].filter((s) => s.preferito).length })
+  if (p === '/_state') return send(res, 200, { mode, lastCode, requests, uploads, labelSaves, wineEdits, winePrivate: Object.fromEntries(winePrivate), attachments, messages, wineCount: WINES.length, users: [...users.values()], cartSize: cart.size, favorites: [...state.values()].filter((s) => s.preferito).length })
   if (p === '/_mode') { mode = body.mode || 'code'; return send(res, 200, { ok: true, mode }) }
 
   // ---- catalogo
@@ -137,6 +143,19 @@ http.createServer(async (req, res) => {
       if (wine) cart.delete(`${uid}|${wine}`)
       else for (const k of [...cart.keys()]) if (k.startsWith(uid + '|')) cart.delete(k)
       return send(res, 204)
+    }
+  }
+
+  // ---- centro messaggi (solo Admin)
+  const msgTable = p.startsWith('/rest/v1/') ? p.slice('/rest/v1/'.length) : ''
+  if (messages[msgTable]) {
+    if (!admins.has(uid)) return send(res, 200, [])
+    if (req.method === 'GET') return send(res, 200, messages[msgTable])
+    if (req.method === 'DELETE') {
+      const id = eqVal(q(u, 'id'))
+      const gone = messages[msgTable].filter((m) => m.id === id)
+      messages[msgTable] = messages[msgTable].filter((m) => m.id !== id)
+      return send(res, 200, gone)
     }
   }
 

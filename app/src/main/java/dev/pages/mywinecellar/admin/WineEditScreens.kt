@@ -309,7 +309,7 @@ fun AdminWineTools(
         Text("Strumenti Admin", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = Accent)
         Button(enabled = !busy, onClick = onEdit, modifier = Modifier.fillMaxWidth()) { Text("✏️ Modifica scheda") }
         if (wine.esclusoVetrina) Text("Esclusa dalla vetrina: la vedi solo tu.", color = InkSoft, fontSize = 14.sp)
-        wine.prezzoAcquisto?.let { Text("Prezzo acquisto: € %.2f".format(it), color = InkSoft, fontSize = 14.sp) }
+        wine.prezzoAcquisto?.let { Text("Prezzo acquisto: " + dev.pages.mywinecellar.ui.euro(it), color = InkSoft, fontSize = 14.sp) }
 
         Text("Foto della bottiglia", fontWeight = FontWeight.SemiBold)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
